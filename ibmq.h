@@ -21,7 +21,6 @@
 #pragma once
 
 #include "itensor/all.h"
-#include "itensor/mps/siteset.h"
 #include <vector>
 #include <utility>
 #include <algorithm>
@@ -90,7 +89,7 @@ namespace ibmq {
 
             void generate_link(size_t ind1, size_t ind2){
                 //generate link between ind1 and ind2
-                a.push_back(Index("LinkInd", 1, Link));
+                a.push_back(Index(1, "LinkInd"));
                 size_t link_ind = a.size(); //1-indexed
 
                 link_node[ind1].push_back(std::make_pair(link_ind, ind2));
@@ -179,7 +178,7 @@ namespace ibmq {
                 //sites
                 if(s.size() == 0){
                     for(auto i : range1(NUM_BITS)){
-                        s.push_back(Index("SiteInd", 2, Site));
+                        s.push_back(Index(2, "SiteInd"));
                     }
                 }
 
@@ -245,7 +244,7 @@ namespace ibmq {
                 }
 
                 Spectrum spec = svd(Psi, U, S, V, args);
-				a[link_ind] = commonIndex(U,S,Link);
+				a[link_ind] = commonIndex(U,S);
 				S /= norm(S); //normalize
 				M[cursor.first] = U;
 				M[cursor.second] = S*V;
@@ -309,7 +308,7 @@ namespace ibmq {
 
                     spec = svd(Psi, U, S, V, args);
 
-                    a[link_ind] = commonIndex(S,V,Link);
+                    a[link_ind] = commonIndex(S,V);
                     S /= norm(S); //normalize
                     M[cursor.second] = V;
                     Psi = M[ind]*U*S;
@@ -352,7 +351,7 @@ namespace ibmq {
 
                     spec = svd(Psi, U, S, V, args);
 
-                    a[link_ind] = commonIndex(U,S,Link);
+                    a[link_ind] = commonIndex(U,S);
                     S /= norm(S); //normalize
                     M[cursor.first] = U;
                     Psi = S*V*M[ind];
