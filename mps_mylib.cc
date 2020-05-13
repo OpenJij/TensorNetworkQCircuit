@@ -93,11 +93,11 @@ int main(int argc, char const* argv[]){
     circuit111.shift_to(7, {"Cutoff", 1E-5});
     circuit111.shift_to(12, {"Cutoff", 1E-5});
     //flip the qubit number (7,12)
-    circuit111.apply(X(circuit.site(7))*X(circuit.site(12)));
+    circuit111.apply(X(circuit111.site(7))*X(circuit111.site(12)));
     //shift the cursor to qubit number (11,12)
     circuit111.shift_to(11, {"Cutoff", 1E-5});
     //flip the qubit number 11
-    circuit111.apply(X(circuit.site(11))*Id(circuit.site(12)));
+    circuit111.apply(X(circuit111.site(11))*Id(circuit111.site(12)));
     
     myvector<ITensor> op(IBMQPeps::NUM_BITS);
     for(auto i : range1(IBMQPeps::NUM_BITS)){
