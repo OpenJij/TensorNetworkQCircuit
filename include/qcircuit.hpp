@@ -15,17 +15,32 @@
 namespace qcircuit {
     using namespace itensor;
 
+    /**
+     * @brief Class to store and modify wave function.
+     */
     class QCircuit {
     private:
-        const CircuitTopology topology;
-        std::vector<Index> a;        // Link (bond) indices
-        std::vector<Index> s;        // Physical (on-site) indices
-        std::vector<ITensor> M;      // Tensor entities
-        ITensor Psi; // TPS wave function
+        const CircuitTopology topology; //!< @brief Circuit topology.
 
-        std::pair<std::size_t, std::size_t> cursor;
+        std::vector<Index> a;   //!< @brief Link (bond) indices.
+        std::vector<Index> s;   //!< @brief Physical (on-site) indices.
+        std::vector<ITensor> M; //!< @brief Tensor entities.
+        ITensor Psi;            //!< @brief TPS wave function.
+
+        std::pair<std::size_t, std::size_t> cursor; //!< @brief Position of cursor, which must be laid across two neighboring sites.
 
     public:
+        /** @brief Constructor to initialize TPS wave function.
+         *
+         * Cursor position will be set at (0, 1).
+         *
+         * @param topology Circuit Topology.
+         * @param init_qbits Initial qubit states for each site.
+         * @param physical_indices Physical (on-site) indices.
+         * If not specified, the indices will be initialized with new IDs.
+         * This argument is mainly used to share physical indices among
+         * some "replica" wave functions in the same circuit.
+         **/
         QCircuit(const CircuitTopology& topology,
                  const std::vector<std::pair<std::complex<double>, std::complex<double>>>& init_qbits,
                  const std::vector<Index>& physical_indices = std::vector<Index>()) :
@@ -77,10 +92,12 @@ namespace qcircuit {
             Psi = M[cursor.first]*M[cursor.second];
         }
 
+        /** @brief returns number of qubits */
         size_t size() const {
             return this->topology.numberOfBits();
         }
 
+        /** @brief decompose and truncate the system wave-function at cursor position.  */
         void decomposePsi(Args args = Args::global()){
             ITensor U,S,V;
 
@@ -121,6 +138,7 @@ namespace qcircuit {
             M[cursor.second] = S*V;
         }
 
+        /** @brief shifts cursor position to specified neighboring site `ind`   */
         Spectrum shift_to(size_t ind, const Args& args = Args::global()) {
             assert(ind != cursor.first);
             assert(ind != cursor.second);
@@ -234,14 +252,15 @@ namespace qcircuit {
             return spec;
         }
 
-        void apply(const ITensor& Op) {
-            assert(Op.inds().size() == 4);
-            for(auto&& elem : Op.inds()){
+        /** @brief apply `op` at cursor position.  */
+        void apply(const ITensor& op) {
+            assert(op.inds().size() == 4);
+            for(auto&& elem : op.inds()){
                 //check if
                 assert(elem == s[cursor.first] || elem == s[cursor.second] || elem == prime(s[cursor.first]) || elem == prime(s[cursor.second]));
             }
 
-            this->Psi = Op * prime(Psi,s[cursor.first],s[cursor.second]);
+            this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
         }
 
         void normalize() {
