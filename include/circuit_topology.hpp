@@ -4,6 +4,9 @@
 #pragma once
 
 #include <vector>
+#include <utility>
+#include <queue>
+#include <algorithm>
 
 namespace qcircuit {
 
@@ -48,6 +51,66 @@ namespace qcircuit {
 
         const std::vector<Neighbor>& neighborsOf(size_t index) const {
             return this->neighbors_list[index];
+        }
+
+
+        /**
+         * @brief Searches the shortest route from `origin` to `destination`.
+         *
+         * Breadth First Search algorithm is used.
+         */
+        std::vector<size_t> getRoute(std::pair<size_t, size_t> origin, std::pair<size_t, size_t> destination) const {
+            static const int NOT_YET_REACHED = -1;
+            std::vector<int> back_to(num_bits, NOT_YET_REACHED);
+            // back_to[i] points which neighboring site we go back at ith site
+            // to reach `origin` in the shortest path.
+
+            // if not necessary to move
+            if((origin.first == destination.first &&  origin.second == destination.second) ||
+               (origin.first == destination.second && origin.second == destination.first)) {
+                return std::vector<size_t>();
+            }
+
+            std::queue<size_t> queue;
+            queue.push(origin.first);
+            back_to[origin.first] = origin.first;
+            queue.push(origin.second);
+            back_to[origin.second] = origin.second;
+
+            while(!queue.empty()) {
+                auto site = queue.front();
+                queue.pop(); // pop() returns nothing.
+
+                if(site == destination.first || site == destination.second) {
+                    break;
+                }
+
+                for(auto neighbor : neighbors_list[site]) {
+                    if(back_to[neighbor.site] == NOT_YET_REACHED) {
+                        back_to[neighbor.site] = site;
+                        queue.push(neighbor.site);
+                    }
+                }
+            }
+
+            size_t site;
+            std::vector<size_t> result;
+            if(back_to[destination.first] != NOT_YET_REACHED) {
+                result.push_back(destination.second);
+                site = destination.first;
+            } else if(back_to[destination.second] != NOT_YET_REACHED) {
+                result.push_back(destination.first);
+                site = destination.second;
+            } else {
+                assert(false && "Sites are not connected.");
+            }
+
+            while(site != origin.first && site != origin.second) {
+                result.push_back(site);
+                site = back_to[site];
+            }
+            std::reverse(result.begin(), result.end());
+            return result;
         }
     };
 } // namespace qcircuit

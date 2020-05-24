@@ -27,29 +27,25 @@ int main(int argc, char const* argv[]){
     //Below is the demonstration of generating GHZ state
 
     //the default cursor is located on qubit number 1 and 2
-    // shift the cursor to qubit number (7,12)
-    circuit.shift_to(2, {"Cutoff", 1E-5});
-    circuit.shift_to(3, {"Cutoff", 1E-5});
-    circuit.shift_to(4, {"Cutoff", 1E-5});
-    circuit.shift_to(6, {"Cutoff", 1E-5});
-    circuit.shift_to(11, {"Cutoff", 1E-5});
+    // shift the cursor to qubit number (6,11)
+    circuit.moveCursorTo(6, 11, {"Cutoff", 1E-5});
 
     //apply Hadamard and X to gate (6,11)
     circuit.apply(H(circuit.site(6))*X(circuit.site(11)));
     //shift the cursor to qubit number (10,11)
-    circuit.shift_to(10, {"Cutoff", 1E-5});
+    circuit.moveCursorTo(10, 11, {"Cutoff", 1E-5});
     //apply Hadamard to gate 10
     circuit.apply(H(circuit.site(10))*Id(circuit.site(11)));
     //apply CNOT to gate (10, 11)
     circuit.apply(CNOT(circuit.site(10), circuit.site(11)));
     //shift the cursor to qubit number (6,11)
-    circuit.shift_to(6, {"Cutoff", 1E-5});
+    circuit.moveCursorTo(6, 11, {"Cutoff", 1E-5});
     //apply CNOT to gate (6, 11)
     circuit.apply(CNOT(circuit.site(6), circuit.site(11)));
     //apply Hadamard to gate (6,11)
     circuit.apply(H(circuit.site(6))*H(circuit.site(11)));
     //shift the cursor to qubit number (10,11)
-    circuit.shift_to(10, {"Cutoff", 1E-5});
+    circuit.moveCursorTo(10, 11, {"Cutoff", 1E-5});
     //apply Hadamard to gate 10
     circuit.apply(H(circuit.site(10))*Id(circuit.site(11)));
     //the result should be bell state (1/sqrt(2))(|000> + |111>)
@@ -62,15 +58,11 @@ int main(int argc, char const* argv[]){
     //|0...111....0>
     QCircuit circuit111(topology, init_qbits, circuit.site());
     //shift the cursor to qubit number (7,12)
-    circuit111.shift_to(2, {"Cutoff", 1E-5});
-    circuit111.shift_to(3, {"Cutoff", 1E-5});
-    circuit111.shift_to(4, {"Cutoff", 1E-5});
-    circuit111.shift_to(6, {"Cutoff", 1E-5});
-    circuit111.shift_to(11, {"Cutoff", 1E-5});
+    circuit111.moveCursorTo(6, 11, {"Cutoff", 1E-5});
     //flip the qubit number (7,12)
     circuit111.apply(X(circuit111.site(6))*X(circuit111.site(11)));
     //shift the cursor to qubit number (11,12)
-    circuit111.shift_to(10, {"Cutoff", 1E-5});
+    circuit111.moveCursorTo(10, 11, {"Cutoff", 1E-5});
     //flip the qubit number 11
     circuit111.apply(X(circuit111.site(10))*Id(circuit111.site(11)));
 

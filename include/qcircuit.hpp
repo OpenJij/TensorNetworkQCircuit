@@ -35,14 +35,14 @@ namespace qcircuit {
          * Cursor position will be set at (0, 1).
          *
          * @param topology Circuit Topology.
-         * @param init_qbits Initial qubit states for each site.
+         * @param init_qubits Initial qubit states for each site.
          * @param physical_indices Physical (on-site) indices.
          * If not specified, the indices will be initialized with new IDs.
          * This argument is mainly used to share physical indices among
          * some "replica" wave functions in the same circuit.
          **/
         QCircuit(const CircuitTopology& topology,
-                 const std::vector<std::pair<std::complex<double>, std::complex<double>>>& init_qbits,
+                 const std::vector<std::pair<std::complex<double>, std::complex<double>>>& init_qubits,
                  const std::vector<Index>& physical_indices = std::vector<Index>()) :
             a(), s(physical_indices), topology(topology) {
 
@@ -68,18 +68,18 @@ namespace qcircuit {
                 switch(neighbors.size()) {
                 case 1:
                     M.emplace_back(s[i],   a[neighbors[0].link]);
-                    M[i].set(      s[i]=1, a[neighbors[0].link]=1, init_qbits[i].first);
-                    M[i].set(      s[i]=2, a[neighbors[0].link]=1, init_qbits[i].second);
+                    M[i].set(      s[i]=1, a[neighbors[0].link]=1, init_qubits[i].first);
+                    M[i].set(      s[i]=2, a[neighbors[0].link]=1, init_qubits[i].second);
                     break;
                 case 2:
                     M.emplace_back(s[i],   a[neighbors[0].link],   a[neighbors[1].link]);
-                    M[i].set(      s[i]=1, a[neighbors[0].link]=1, a[neighbors[1].link]=1, init_qbits[i].first);
-                    M[i].set(      s[i]=2, a[neighbors[0].link]=1, a[neighbors[1].link]=1, init_qbits[i].second);
+                    M[i].set(      s[i]=1, a[neighbors[0].link]=1, a[neighbors[1].link]=1, init_qubits[i].first);
+                    M[i].set(      s[i]=2, a[neighbors[0].link]=1, a[neighbors[1].link]=1, init_qubits[i].second);
                     break;
                 case 3:
                     M.emplace_back(s[i],   a[neighbors[0].link]  , a[neighbors[1].link]  , a[neighbors[2].link]);
-                    M[i].set(      s[i]=1, a[neighbors[0].link]=1, a[neighbors[1].link]=1, a[neighbors[2].link]=1, init_qbits[i].first);
-                    M[i].set(      s[i]=2, a[neighbors[0].link]=1, a[neighbors[1].link]=1, a[neighbors[2].link]=1, init_qbits[i].second);
+                    M[i].set(      s[i]=1, a[neighbors[0].link]=1, a[neighbors[1].link]=1, a[neighbors[2].link]=1, init_qubits[i].first);
+                    M[i].set(      s[i]=2, a[neighbors[0].link]=1, a[neighbors[1].link]=1, a[neighbors[2].link]=1, init_qubits[i].second);
                     break;
                 default:
                     assert(false);
@@ -139,7 +139,7 @@ namespace qcircuit {
         }
 
         /** @brief shifts cursor position to specified neighboring site `ind`   */
-        Spectrum shift_to(size_t ind, const Args& args = Args::global()) {
+        Spectrum shiftCursorTo(size_t ind, const Args& args = Args::global()) {
             assert(ind != cursor.first);
             assert(ind != cursor.second);
 
@@ -250,6 +250,15 @@ namespace qcircuit {
             }
 
             return spec;
+        }
+
+        /** @brief moves cursor to given destination. */
+        void moveCursorTo(size_t destination1, size_t destination2, const Args& args = Args::global()) {
+            auto path = topology.getRoute(cursor, std::make_pair(destination1, destination2));
+
+            for(auto site : path) {
+                shiftCursorTo(site, args);
+            }
         }
 
         /** @brief apply `op` at cursor position.  */
