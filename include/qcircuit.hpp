@@ -262,8 +262,8 @@ namespace qcircuit {
             }
         }
 
-        /** @brief apply `op` at cursor position.  */
-        void apply(const ITensor& op) {
+        /** @brief applies `op` at cursor position. */
+        void applyAtCursor(const ITensor& op) {
             assert(op.inds().size() == 4);
             for(auto&& elem : op.inds()){
                 //check if
@@ -273,6 +273,11 @@ namespace qcircuit {
             this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
         }
 
+        /**
+         * @brief applies one-site gates `gate1` and `gate2` onto the gate position.
+         *
+         * Cursor position will be automatically moved.
+         */
         void apply(const OneSiteGate& gate1,
                    const OneSiteGate& gate2,
                    const Args& args = Args::global()) {
@@ -281,6 +286,11 @@ namespace qcircuit {
             this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
         }
 
+        /**
+         * @brief applies two-site gate `gate` onto the gate position.
+         *
+         * Cursor position will be automatically moved.
+         */
         void apply(const TwoSiteGate& gate,
                    const Args& args = Args::global()) {
             moveCursorTo(gate.site1, gate.site2, args);
@@ -288,6 +298,7 @@ namespace qcircuit {
             this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
         }
 
+        /** @brief returns the tensor operator corresponding to `gate`. */
         ITensor generateTensorOp(const Gate& gate) {
             return gate.op(s);
         }

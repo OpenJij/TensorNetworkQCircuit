@@ -6,13 +6,21 @@
 namespace qcircuit {
     using namespace itensor;
 
+    /**
+     * @brief Abstract class to represent a quantum gate.
+     */
     class Gate {
     public:
+        /**
+         * @brief returns corresponding tensor operator.
+         */
         virtual ITensor op(const std::vector<Index>& slist) const = 0;
     };
 
     /**
-     * @brief Class to represent a quantum gate acting on a site
+     * @brief Abstract class to represent a one-site quantum gate.
+     *
+     * This class holds only the site ID on which the gate acts.
      */
     class OneSiteGate : public Gate {
     public:
@@ -21,6 +29,9 @@ namespace qcircuit {
         OneSiteGate(size_t site) : site(site) {}
     };
 
+    /**
+     * @brief Identity gate.
+     */
     class Id : public OneSiteGate {
     public:
         Id(size_t site) : OneSiteGate(site) {}
@@ -34,6 +45,9 @@ namespace qcircuit {
         }
     };
 
+    /**
+     * @brief Pauli X gate.
+     */
     class X : public OneSiteGate {
     public:
         X(size_t site) : OneSiteGate(site) {}
@@ -47,6 +61,9 @@ namespace qcircuit {
         }
     };
 
+    /**
+     * @brief Pauli Y gate.
+     */
     class Y : public OneSiteGate {
     public:
         Y(size_t site) : OneSiteGate(site) {}
@@ -60,6 +77,9 @@ namespace qcircuit {
         }
     };
 
+    /**
+     * @brief Pauli Z gate.
+     */
     class Z : public OneSiteGate {
     public:
         Z(size_t site) : OneSiteGate(site) {}
@@ -73,6 +93,9 @@ namespace qcircuit {
         }
     };
 
+    /**
+     * @brief Projection onto |0>, i.e. |0><0|.
+     */
     class Proj_0 : public OneSiteGate {
     public:
         Proj_0(size_t site) : OneSiteGate(site) {}
@@ -85,6 +108,9 @@ namespace qcircuit {
         }
     };
 
+    /**
+     * @brief Projection onto |1>, i.e. |1><1|.
+     */
     class Proj_1 : public OneSiteGate {
     public:
         Proj_1(size_t site) : OneSiteGate(site) {}
@@ -97,6 +123,9 @@ namespace qcircuit {
         }
     };
 
+    /**
+     * @brief Map from |0> to |1> (Pauli S-), i.e. |1><0|.
+     */
     class Proj_0_to_1 : public OneSiteGate {
     public:
         Proj_0_to_1(size_t site) : OneSiteGate(site) {}
@@ -109,6 +138,9 @@ namespace qcircuit {
         }
     };
 
+    /**
+     * @brief Map from |1> to |0> (Pauli S+), i.e. |0><1|.
+     */
     class Proj_1_to_0 : public OneSiteGate {
     public:
         Proj_1_to_0(size_t site) : OneSiteGate(site) {}
@@ -121,6 +153,9 @@ namespace qcircuit {
         }
     };
 
+    /**
+     * @brief Hadamard gate.
+     */
     class H : public OneSiteGate {
     public:
         H(size_t site) : OneSiteGate(site) {}
@@ -132,6 +167,15 @@ namespace qcircuit {
     };
 
 
+
+
+
+
+    /**
+     * @brief Abstract class to represent a two-site quantum gate.
+     *
+     * This class holds only the site IDs on which the gate acts.
+     */
     class TwoSiteGate : public Gate {
     public:
         const size_t site1; //!< @brief Site (physical index) ID
@@ -140,6 +184,9 @@ namespace qcircuit {
         TwoSiteGate(size_t site1, size_t site2) : site1(site1), site2(site2) {}
     };
 
+    /**
+     * @brief Controlled NOT gate (cX gate).
+     */
     class CNOT : public TwoSiteGate {
     public:
         CNOT(size_t site1, size_t site2) : TwoSiteGate(site1, site2) {}
@@ -150,6 +197,9 @@ namespace qcircuit {
         }
     };
 
+    /**
+     * @brief cY gate.
+     */
     class CY : public TwoSiteGate {
     public:
         CY(size_t site1, size_t site2) : TwoSiteGate(site1, site2) {}
@@ -160,6 +210,9 @@ namespace qcircuit {
         }
     };
 
+    /**
+     * @brief cZ gate.
+     */
     class CZ : public TwoSiteGate {
     public:
         CZ(size_t site1, size_t site2) : TwoSiteGate(site1, site2) {}
