@@ -11,6 +11,7 @@
 #include <iostream>
 #include <array>
 #include "circuit_topology.hpp"
+#include "quantum_gate.hpp"
 
 namespace qcircuit {
     using namespace itensor;
@@ -272,6 +273,25 @@ namespace qcircuit {
             this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
         }
 
+        void apply(const OneSiteGate& gate1,
+                   const OneSiteGate& gate2,
+                   const Args& args = Args::global()) {
+            moveCursorTo(gate1.site, gate2.site, args);
+            auto op = generateTensorOp(gate1) * generateTensorOp(gate2);
+            this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
+        }
+
+        void apply(const TwoSiteGate& gate,
+                   const Args& args = Args::global()) {
+            moveCursorTo(gate.site1, gate.site2, args);
+            auto op = generateTensorOp(gate);
+            this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
+        }
+
+        ITensor generateTensorOp(const Gate& gate) {
+            return gate.op(s);
+        }
+
         void normalize() {
             Psi /= norm(Psi);
         }
@@ -330,88 +350,6 @@ namespace qcircuit {
             std::cout << "(" << cursor.first << "," << cursor.second << ")" << std::endl;
         }
     };
-
-	//ITensor Hamiltonian
-	inline const ITensor Id(const Index& s) {
-		ITensor ret(s, prime(s));
-		ret.set(s(1), prime(s)(1), 1);
-		ret.set(s(2), prime(s)(2), 1);
-		return ret;
-	}
-
-    //pauli x
-	inline const ITensor X(const Index& s) {
-		ITensor ret(s, prime(s));
-		ret.set(s(1), prime(s)(2), 1);
-		ret.set(s(2), prime(s)(1), 1);
-		return ret;
-	}
-
-    //pauli y
-	inline const ITensor Y(const Index& s) {
-		ITensor ret(s, prime(s));
-		ret.set(s(1), prime(s)(2), -1_i);
-		ret.set(s(2), prime(s)(1), 1_i);
-		return ret;
-	}
-
-    //pauli z
-	inline const ITensor Z(const Index& s) {
-		ITensor ret(s, prime(s));
-		ret.set(s(1), prime(s)(1), 1);
-		ret.set(s(2), prime(s)(2), -1);
-		return ret;
-	}
-
-    //|0><0|
-	inline const ITensor proj_0(const Index& s) {
-		ITensor ret(s, prime(s));
-		ret.set(s(1), prime(s)(1), 1);
-		return ret;
-	}
-
-    //|1><1|
-	inline const ITensor proj_1(const Index& s) {
-		ITensor ret(s, prime(s));
-		ret.set(s(2), prime(s)(2), 1);
-		return ret;
-	}
-
-    //|1><0|
-	inline const ITensor proj_0_to_1(const Index& s) {
-		ITensor ret(s, prime(s));
-		ret.set(s(2), prime(s)(1), 1);
-		return ret;
-	}
-
-    //|0><1|
-	inline const ITensor proj_1_to_0(const Index& s) {
-		ITensor ret(s, prime(s));
-		ret.set(s(1), prime(s)(2), 1);
-		return ret;
-	}
-
-    //Hadamard
-	inline const ITensor H(const Index& s) {
-		return (1.0/sqrt(2.0))*(proj_0(s) + proj_0_to_1(s)) + (1.0/sqrt(2.0))*(proj_1(s) - proj_1_to_0(s));
-	}
-
-    //CNOT
-	inline const ITensor CNOT(const Index& s1, const Index& s2) {
-		return proj_0(s1)*Id(s2) + proj_1(s1)*X(s2);
-	}
-
-    //Control-Y
-	inline const ITensor CY(const Index& s1, const Index& s2) {
-		return proj_0(s1)*Id(s2) + proj_1(s1)*Y(s2);
-	}
-
-    //Control-Z
-	inline const ITensor CZ(const Index& s1, const Index& s2) {
-		return proj_0(s1)*Id(s2) + proj_1(s1)*Z(s2);
-	}
-
-
 
 
 	Cplx overlap(QCircuit circuit1, const std::vector<ITensor>& op, QCircuit circuit2,
