@@ -363,23 +363,22 @@ namespace qcircuit {
     };
 
 
-	Cplx overlap(QCircuit circuit1, const std::vector<ITensor>& op, QCircuit circuit2,
+    Cplx overlap(QCircuit circuit1, const std::vector<ITensor>& op, QCircuit circuit2,
                  const Args& args = Args::global()) {
-		assert(op.size() == circuit1.size() && op.size() == circuit2.size());
+        assert(op.size() == circuit1.size() && op.size() == circuit2.size());
 
-		circuit1.decomposePsi(args);
-		circuit2.decomposePsi(args);
+        circuit1.decomposePsi(args);
+        circuit2.decomposePsi(args);
 
-		circuit2.primeAll();
+        circuit2.primeAll();
 
-		ITensor ret_t = dag(circuit1.Mref(0))*op[0]*circuit2.Mref(0);
-		for(size_t i = 1; i < circuit1.size(); i++) {
-			//reduction
-			ret_t = dag(circuit1.Mref(i))*op[i]*ret_t*circuit2.Mref(i);
-		}
+        ITensor ret_t = dag(circuit1.Mref(0))*op[0]*circuit2.Mref(0);
+        for(size_t i = 1; i < circuit1.size(); i++) {
+            //reduction
+            ret_t = dag(circuit1.Mref(i))*op[i]*ret_t*circuit2.Mref(i);
+        }
 
-		return ret_t.cplx();
-	}
+        return ret_t.cplx();
+    }
 
 } // namespace qcircuit
-
