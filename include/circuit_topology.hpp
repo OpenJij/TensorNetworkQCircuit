@@ -32,7 +32,7 @@ namespace qcircuit {
                                            num_links(0),
                                            neighbors_list(num_bits) {}
 
-        void generate_link(size_t site1, size_t site2) {
+        void generateLink(size_t site1, size_t site2) {
             // TODO: assert or throw Exception when index exceeds number of bits.
             // TODO: assert or throw Exception when multiple link is specified.
 

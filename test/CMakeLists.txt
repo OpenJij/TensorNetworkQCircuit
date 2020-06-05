@@ -1,0 +1,5 @@
+find_package(GTest REQUIRED)
+include(GoogleTest)
+add_executable(qcircuit_test qcircuit_test.cpp)
+target_link_libraries(qcircuit_test -lblas -llapack -lpthread -litensor GTest::GTest GTest::Main)
+add_test(NAME FullTest COMMAND qcircuit_test)
