@@ -128,7 +128,7 @@ TEST(CALCULATION_TEST, OBSERVATION_TEST) {
 
     QCircuit circuit(topology, init_qbits);
     circuit.apply(H(0), Id(1), {"Cutoff", 1E-5}); // create (|0>+|1>)/sqrt(2)
-    auto zero_weight = circuit.proberbilityOfZero(0);
+    auto zero_weight = circuit.probabilityOfZero(0);
     EXPECT_NEAR(0.5, zero_weight, 1e-3); // probability to observe 0 should be 1/2.
 
     auto bit = circuit.observeQubit(0);

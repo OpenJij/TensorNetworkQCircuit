@@ -312,7 +312,7 @@ namespace qcircuit {
           * @brief returns probability the qubit at `site` to be observed as value "0",
           * i.e. `<psi|Proj_0(i)|psi>` as "Born rule".
           */
-        double proberbilityOfZero(size_t site) const {
+        double probabilityOfZero(size_t site) const {
             std::vector<ITensor> op;
             op.reserve(this->size());
             for(size_t i = 0;i < this->size();i++) {
@@ -333,7 +333,7 @@ namespace qcircuit {
 
         /** @brief observes the qubit state at `site` and returns the projected qubit value (0 or 1). */
         int observeQubit(size_t site, const Args& args = Args::global()) {
-            auto prob0 = proberbilityOfZero(site);
+            auto prob0 = probabilityOfZero(site);
 
             std::uniform_real_distribution<> dist(0.0, 1.0);
             int state = (dist(random_engine) < prob0) ? 0 : 1; // measurement
