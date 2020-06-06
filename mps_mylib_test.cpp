@@ -12,6 +12,7 @@ using namespace qcircuit;
 
 int main(int argc, char const* argv[]){
     const auto topology = make_ibmq_topology();
+    topology.exportDotString("test.dot");
     const size_t size = topology.numberOfBits();
 
     /* start with |00 ... 00> (53qubit) */

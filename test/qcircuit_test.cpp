@@ -89,3 +89,29 @@ TEST(CALCULATION_TEST, LOOP_TEST) {
     EXPECT_NEAR(1.0 , abs(overlap(circuit, op, circuit)), 1e-3);
 
 }
+
+TEST(CALCULATION_TEST, SWAP_TEST) {
+    using namespace std;
+    using namespace qcircuit;
+
+    const size_t size = 8;
+    const auto topology = make_chain(size);
+
+    vector<pair<complex<double>, complex<double>>>
+        init_qbits(size, make_pair(1.0, 0.0));
+
+    QCircuit circuit(topology, init_qbits);
+    circuit.apply(Id(0), X(1), {"Cutoff", 1E-5});
+    circuit.apply(Swap(0, 1), {"Cutoff", 1E-5});
+
+    QCircuit circuit10(topology, init_qbits, circuit.site());
+    circuit10.apply(X(0), Id(1), {"Cutoff", 1E-5});
+
+    vector<ITensor> op;
+    op.reserve(size);
+    for(size_t i = 0;i < size;i++) {
+        op.push_back(circuit.generateTensorOp(Id(i)));
+    }
+
+    EXPECT_NEAR(1, abs(overlap(circuit, op, circuit10)), 1e-3);
+}

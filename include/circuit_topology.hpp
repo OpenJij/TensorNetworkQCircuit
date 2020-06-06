@@ -7,6 +7,7 @@
 #include <utility>
 #include <queue>
 #include <algorithm>
+#include <fstream>
 
 namespace qcircuit {
 
@@ -102,7 +103,8 @@ namespace qcircuit {
                 result.push_back(destination.first);
                 site = destination.second;
             } else {
-                assert(false && "Sites are not connected.");
+                // TODO: assert or throw Exception.
+                // If reach this else branch, given sites are unreachable.
             }
 
             while(site != origin.first && site != origin.second) {
@@ -111,6 +113,30 @@ namespace qcircuit {
             }
             std::reverse(result.begin(), result.end());
             return result;
+        }
+
+        /**
+         * @brief Exports graph topology as DOT language (Graphviz style) to given file.
+         *
+         * To generate PDF file from exported DOT file, run the following:  
+         * `dot -Tpdf <name>.dot -o <name>.pdf`
+         */
+        void exportDotString(const std::string& filename,
+                             const std::string& layout = "neato",
+                             const std::string& shape = "circle") const {
+            std::ofstream stream(filename);
+
+            stream << "graph {" << std::endl;
+            stream << "    graph[layout=" << layout << "]" << std::endl;
+            stream << "    node[shape=" << shape << "]" << std::endl << std::endl;
+            for(size_t i = 0;i < num_bits;i++) {
+                for(const auto& neighbor : neighbors_list[i]) {
+                    if(i > neighbor.site) {
+                        stream << "    " << i << " -- " << neighbor.site << ";" << std::endl;
+                    }
+                }
+            }
+            stream << "}" << std::endl;
         }
     };
 } // namespace qcircuit

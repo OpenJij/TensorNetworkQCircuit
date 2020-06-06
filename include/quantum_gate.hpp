@@ -39,8 +39,8 @@ namespace qcircuit {
         ITensor op(const std::vector<Index>& slist) const override {
             auto s = slist[site];
             ITensor ret(s, prime(s));
-            ret.set(s(1), prime(s)(1), 1);
-            ret.set(s(2), prime(s)(2), 1);
+            ret.set(s=1, prime(s)=1, 1);
+            ret.set(s=2, prime(s)=2, 1);
             return ret;
         }
     };
@@ -55,8 +55,8 @@ namespace qcircuit {
         ITensor op(const std::vector<Index>& slist) const override {
             auto s = slist[site];
             ITensor ret(s, prime(s));
-            ret.set(s(1), prime(s)(2), 1);
-            ret.set(s(2), prime(s)(1), 1);
+            ret.set(s=1, prime(s)=2, 1);
+            ret.set(s=2, prime(s)=1, 1);
             return ret;
         }
     };
@@ -71,8 +71,8 @@ namespace qcircuit {
         ITensor op(const std::vector<Index>& slist) const override {
             auto s = slist[site];
             ITensor ret(s, prime(s));
-            ret.set(s(1), prime(s)(2), -1_i);
-            ret.set(s(2), prime(s)(1), 1_i);
+            ret.set(s=1, prime(s)=2, -1_i);
+            ret.set(s=2, prime(s)=1, 1_i);
             return ret;
         }
     };
@@ -87,8 +87,8 @@ namespace qcircuit {
         ITensor op(const std::vector<Index>& slist) const override {
             auto s = slist[site];
             ITensor ret(s, prime(s));
-            ret.set(s(1), prime(s)(1), 1);
-            ret.set(s(2), prime(s)(2), -1);
+            ret.set(s=1, prime(s)=1, 1);
+            ret.set(s=2, prime(s)=2, -1);
             return ret;
         }
     };
@@ -103,7 +103,7 @@ namespace qcircuit {
         ITensor op(const std::vector<Index>& slist) const override {
             auto s = slist[site];
             ITensor ret(s, prime(s));
-            ret.set(s(1), prime(s)(1), 1);
+            ret.set(s=1, prime(s)=1, 1);
             return ret;
         }
     };
@@ -118,7 +118,7 @@ namespace qcircuit {
         ITensor op(const std::vector<Index>& slist) const override {
             auto s = slist[site];
             ITensor ret(s, prime(s));
-            ret.set(s(2), prime(s)(2), 1);
+            ret.set(s=2, prime(s)=2, 1);
             return ret;
         }
     };
@@ -133,7 +133,7 @@ namespace qcircuit {
         ITensor op(const std::vector<Index>& slist) const override {
             auto s = slist[site];
             ITensor ret(s, prime(s));
-            ret.set(s(2), prime(s)(1), 1);
+            ret.set(s=2, prime(s)=1, 1);
             return ret;
         }
     };
@@ -148,7 +148,7 @@ namespace qcircuit {
         ITensor op(const std::vector<Index>& slist) const override {
             auto s = slist[site];
             ITensor ret(s, prime(s));
-            ret.set(s(1), prime(s)(2), 1);
+            ret.set(s=1, prime(s)=2, 1);
             return ret;
         }
     };
@@ -220,6 +220,26 @@ namespace qcircuit {
         ITensor op(const std::vector<Index>& slist) const override {
             return Proj_0(site1).op(slist)*Id(site2).op(slist)
                 + Proj_1(site1).op(slist)*Z(site2).op(slist);
+        }
+    };
+
+    /**
+     * @brief Swap gate.
+     */
+    class Swap : public TwoSiteGate {
+    public:
+        Swap(size_t site1, size_t site2) : TwoSiteGate(site1, site2) {}
+
+        ITensor op(const std::vector<Index>& slist) const override {
+            auto s1 = slist[site1];
+            auto s2 = slist[site2];
+            ITensor ret(s1, prime(s1), s2, prime(s2));
+            ret.set(s1=1, prime(s1)=1, s2=1, prime(s2)=1, 1);
+            ret.set(s1=2, prime(s1)=2, s2=2, prime(s2)=2, 1);
+            ret.set(s1=1, prime(s1)=2, s2=2, prime(s2)=1, 1);
+            ret.set(s1=2, prime(s1)=1, s2=1, prime(s2)=2, 1);
+
+            return ret;
         }
     };
 }
