@@ -16,6 +16,10 @@
 namespace qcircuit {
     using namespace itensor;
 
+    class QCircuit;
+    Cplx overlap(QCircuit circuit1, const std::vector<ITensor>& op, QCircuit circuit2,
+                 const Args& args = Args::global());
+
     /**
      * @brief Class to store and modify wave function.
      */
@@ -30,6 +34,7 @@ namespace qcircuit {
 
         std::pair<std::size_t, std::size_t> cursor; //!< @brief Position of cursor, which must be laid across two neighboring sites.
 
+        std::mt19937 random_engine;
     public:
         /** @brief Constructor to initialize TPS wave function.
          *
@@ -45,7 +50,7 @@ namespace qcircuit {
         QCircuit(const CircuitTopology& topology,
                  const std::vector<std::pair<std::complex<double>, std::complex<double>>>& init_qubits,
                  const std::vector<Index>& physical_indices = std::vector<Index>()) :
-            a(), s(physical_indices), topology(topology) {
+            a(), s(physical_indices), topology(topology), random_engine(std::random_device()()) {
 
             /* Initialize link indices */
             a.reserve(topology.numberOfLinks());
@@ -299,8 +304,49 @@ namespace qcircuit {
         }
 
         /** @brief returns the tensor operator corresponding to `gate`. */
-        ITensor generateTensorOp(const Gate& gate) {
+        ITensor generateTensorOp(const Gate& gate) const {
             return gate.op(s);
+        }
+
+        /**
+          * @brief returns probability the qubit at `site` to be observed as value "0",
+          * i.e. `<psi|Proj_0(i)|psi>` as "Born rule".
+          */
+        double proberbilityOfZero(size_t site) const {
+            std::vector<ITensor> op;
+            op.reserve(this->size());
+            for(size_t i = 0;i < this->size();i++) {
+                if(i == site) {
+                    op.push_back(generateTensorOp(Proj_0(i)));
+                } else {
+                    op.push_back(generateTensorOp(Id(i)));
+                }
+            }
+
+            /*
+             * <psi|Proj_0(i)|psi> = |w_{i,0}|^2 is real by definition,
+             * where w_{i,0} is the coefficient corresponding to the base |....0....>.
+             *                                                     (ith qubit) ^
+             */
+            return std::real(overlap(*this, op, *this));
+        }
+
+        /** @brief observes the qubit state at `site` and returns the projected qubit value (0 or 1). */
+        int observeQubit(size_t site, const Args& args = Args::global()) {
+            auto prob0 = proberbilityOfZero(site);
+
+            std::uniform_real_distribution<> dist(0.0, 1.0);
+            int state = (dist(random_engine) < prob0) ? 0 : 1; // measurement
+
+            size_t neighbor = topology.neighborsOf(site)[0].site; // Dummy site to which Id operator is applied.
+            if(state == 0) {
+                apply(Proj_0(site), Id(neighbor), args);
+            } else {
+                apply(Proj_1(site), Id(neighbor), args);
+            }
+            this->normalize();
+
+            return state;
         }
 
         void normalize() {
@@ -362,9 +408,9 @@ namespace qcircuit {
         }
     };
 
-
     Cplx overlap(QCircuit circuit1, const std::vector<ITensor>& op, QCircuit circuit2,
-                 const Args& args = Args::global()) {
+                 const Args& args) {
+        /* Prototype declaration of this function is placed at the top. */
         assert(op.size() == circuit1.size() && op.size() == circuit2.size());
 
         circuit1.decomposePsi(args);

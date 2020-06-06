@@ -115,3 +115,38 @@ TEST(CALCULATION_TEST, SWAP_TEST) {
 
     EXPECT_NEAR(1, abs(overlap(circuit, op, circuit10)), 1e-3);
 }
+
+TEST(CALCULATION_TEST, OBSERVATION_TEST) {
+    using namespace std;
+    using namespace qcircuit;
+
+    const size_t size = 8;
+    const auto topology = make_chain(size);
+
+    vector<pair<complex<double>, complex<double>>>
+        init_qbits(size, make_pair(1.0, 0.0));
+
+    QCircuit circuit(topology, init_qbits);
+    circuit.apply(H(0), Id(1), {"Cutoff", 1E-5}); // create (|0>+|1>)/sqrt(2)
+    auto zero_weight = circuit.proberbilityOfZero(0);
+    EXPECT_NEAR(0.5, zero_weight, 1e-3); // probability to observe 0 should be 1/2.
+
+    auto bit = circuit.observeQubit(0);
+    std::cout << "qubit is observed as " << bit << std::endl;
+
+    vector<ITensor> op;
+    op.reserve(size);
+    for(size_t i = 0;i < size;i++) {
+        op.push_back(circuit.generateTensorOp(Id(i)));
+    }
+    if(bit == 0) {
+        std::cout << "checking overlap with |0>" << std::endl;
+        QCircuit circuit0(topology, init_qbits, circuit.site());
+        EXPECT_NEAR(1, abs(overlap(circuit, op, circuit0)), 1e-3);
+    } else {
+        std::cout << "checking overlap with |1>" << std::endl;
+        QCircuit circuit1(topology, init_qbits, circuit.site());
+        circuit1.apply(X(0), Id(1), {"Cutoff", 1E-5});
+        EXPECT_NEAR(1, abs(overlap(circuit, op, circuit1)), 1e-3);
+    }
+}
