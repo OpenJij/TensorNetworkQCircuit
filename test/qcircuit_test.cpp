@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <cmath>
-#include "itensor/util/print_macro.h"
-#include "qcircuit.hpp"
-#include "circuits.hpp"
+#include <itensor/util/print_macro.h>
+#include <qcircuit.hpp>
+#include <circuits.hpp>
 
 TEST(CALCULATION_TEST, GHZ_STATE_TEST) {
     using namespace std;

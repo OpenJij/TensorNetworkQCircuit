@@ -1,7 +1,7 @@
 //Copyright (c) 2020 Jij Inc.
 
 #pragma once
-#include "itensor/all.h"
+#include <itensor/all.h>
 
 namespace qcircuit {
     using namespace itensor;

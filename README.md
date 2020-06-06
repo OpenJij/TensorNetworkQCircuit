@@ -7,13 +7,13 @@ By default, CMakefile refers to `external/itensor` directory.
 ## Example
 
 ```c++
-#include "itensor/all.h"
-#include "itensor/util/print_macro.h"
+#include <itensor/all.h>
+#include <itensor/util/print_macro.h>
 #include <vector>
-#include "qcircuit.hpp"
-#include "circuit_topology.hpp"
-#include "quantum_gate.hpp"
-#include "circuits.hpp"
+#include <qcircuit.hpp>
+#include <circuit_topology.hpp>
+#include <quantum_gate.hpp>
+#include <circuits.hpp>
 
 using namespace qcircuit;
 
