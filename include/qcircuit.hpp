@@ -98,6 +98,22 @@ namespace qcircuit {
             Psi = M[cursor.first]*M[cursor.second];
         }
 
+        /** @brief Constructor to initialize TPS wave function with |000 ... 000>.
+         *
+         * Cursor position will be set at (0, 1).
+         *
+         * @param topology Circuit Topology.
+         * @param physical_indices Physical (on-site) indices.
+         * If not specified, the indices will be initialized with new IDs.
+         * This argument is mainly used to share physical indices among
+         * some "replica" wave functions in the same circuit.
+         **/
+        QCircuit(const CircuitTopology& topology,
+                 const std::vector<Index>& physical_indices = std::vector<Index>()) :
+            QCircuit(topology,
+                     std::vector<std::pair<std::complex<double>, std::complex<double>>>(topology.numberOfBits(), std::make_pair(1.0, 0.0)),
+                     physical_indices) {}
+
         /** @brief returns number of qubits */
         size_t size() const {
             return this->topology.numberOfBits();
@@ -408,8 +424,10 @@ namespace qcircuit {
         }
     };
 
-    Cplx overlap(QCircuit circuit1, const std::vector<ITensor>& op, QCircuit circuit2,
-                 const Args& args) {
+    inline Cplx overlap(QCircuit circuit1,
+                        const std::vector<ITensor>& op,
+                        QCircuit circuit2,
+                        const Args& args) {
         /* Prototype declaration of this function is placed at the top. */
         assert(op.size() == circuit1.size() && op.size() == circuit2.size());
 

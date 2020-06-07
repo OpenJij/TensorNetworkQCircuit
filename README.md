@@ -1,10 +1,22 @@
 # README for developers
 
 ## Dependencies
-[ITensor](https://itensor.org/) v3 is required.
-By default, CMakefile refers to `external/itensor` directory.
+[ITensor](https://itensor.org/) v3 and [pybind11](https://github.com/pybind/pybind11)
+are required.
 
-## Example
+Directory structure which is not contained in Git repository
+is currently as follows:
+```
+.
+├── build (Working directory for CMake out-of-source build)
+├── html (Doxygen output)
+├── external
+    ├── itensor
+    └── pybind11
+```
+
+
+## C++ Example
 
 ```c++
 #include <itensor/all.h>
@@ -63,4 +75,25 @@ int main(int argc, char const* argv[]){
 }
 ```
 
+## Python example
 
+```python
+from build.qcircuit import *
+
+def main():
+    topology = make_ibmq_topology()
+    circuit = QCircuit(topology)
+
+
+    circuit.apply(H(0), Id(1))
+    prob0 = circuit.probabilityOfZero(0)
+    print("Probability to observe |0>: {:.3f}".format(prob0)) # should be 1/
+
+    bit = circuit.observeQubit(0)  # projection
+    print("Qubit 0 is observed as |{}>".format(bit))
+
+
+if __name__ == "__main__":
+    main()
+
+```
