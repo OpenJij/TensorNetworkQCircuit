@@ -84,10 +84,9 @@ def main():
     topology = make_ibmq_topology()
     circuit = QCircuit(topology)
 
-
     circuit.apply(H(0), Id(1))
     prob0 = circuit.probabilityOfZero(0)
-    print("Probability to observe |0>: {:.3f}".format(prob0)) # should be 1/
+    print("Probability to observe |0>: {:.3f}".format(prob0)) # should be 1/2
 
     bit = circuit.observeQubit(0)  # projection
     print("Qubit 0 is observed as |{}>".format(bit))
