@@ -15,7 +15,7 @@ link_directories("${ITENSOR_DIR}/lib")
 
 ## Code runner configuration
 add_executable(main mps_mylib_test.cpp)
-target_link_libraries(main -lblas -llapack -lpthread -litensor)
+target_link_libraries(main -litensor -llapack -lblas -lpthread)
 
 
 ## C++ test configuration
@@ -26,4 +26,4 @@ add_subdirectory(test)
 add_subdirectory("external/pybind11")
 file(GLOB pybind_src "src/*.cpp")
 pybind11_add_module(qcircuit ${pybind_src})
-target_link_libraries(qcircuit PRIVATE -lblas -llapack -lpthread -litensor)
+target_link_libraries(qcircuit PRIVATE-litensor -llapack -lblas -lpthread)

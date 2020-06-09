@@ -25,12 +25,12 @@ namespace qcircuit {
      */
     class QCircuit {
     private:
-        const CircuitTopology topology; //!< @brief Circuit topology.
-
         std::vector<Index> a;   //!< @brief Link (bond) indices.
         std::vector<Index> s;   //!< @brief Physical (on-site) indices.
         std::vector<ITensor> M; //!< @brief Tensor entities.
         ITensor Psi;            //!< @brief TPS wave function.
+
+        const CircuitTopology topology; //!< @brief Circuit topology.
 
         std::pair<std::size_t, std::size_t> cursor; //!< @brief Position of cursor, which must be laid across two neighboring sites.
 

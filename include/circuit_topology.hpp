@@ -24,9 +24,10 @@ namespace qcircuit {
         };
 
     private:
-        std::vector<std::vector<Neighbor>> neighbors_list; //!< @brief List of neighboring sites of each site.
-        size_t num_links; //!< @brief Number of links
         const size_t num_bits; //!< @brief Number of qubits
+        size_t num_links; //!< @brief Number of links
+        std::vector<std::vector<Neighbor>> neighbors_list; //!< @brief List of neighboring sites of each site.
+
 
     public:
         CircuitTopology(size_t num_bits) : num_bits(num_bits),

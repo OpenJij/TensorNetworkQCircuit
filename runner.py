@@ -1,4 +1,4 @@
-from build.qcircuit import *
+from qcircuit import *
 
 def main():
     topology = make_ibmq_topology()
