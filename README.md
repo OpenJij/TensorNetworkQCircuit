@@ -76,9 +76,12 @@ int main(int argc, char const* argv[]){
 ```
 
 ## Python example
+At the root directory, `pip install .` is available.
+If your own ITensor is in a different place from `external/itensor`,
+specify the location by editting `setup.py`.
 
 ```python
-from build.qcircuit import *
+from qcircuit import *
 
 def main():
     topology = make_ibmq_topology()
