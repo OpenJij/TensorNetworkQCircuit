@@ -88,7 +88,7 @@ from qcircuit import *
 def main():
     topology = make_ibmq_topology()
     circuit = QCircuit(topology)
-	circuit.cutoff = 1e-5
+    circuit.cutoff = 1e-5
 
     circuit.apply(H(0))
     prob0 = circuit.probabilityOfZero(0)
