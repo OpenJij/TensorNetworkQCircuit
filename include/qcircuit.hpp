@@ -35,6 +35,9 @@ namespace qcircuit {
         std::pair<std::size_t, std::size_t> cursor; //!< @brief Position of cursor, which must be laid across two neighboring sites.
 
         std::mt19937 random_engine;
+
+        Args default_args = Args(); //!< @brief Default arguments for ITensor functions.
+
     public:
         /** @brief Constructor to initialize TPS wave function.
          *
@@ -120,7 +123,7 @@ namespace qcircuit {
         }
 
         /** @brief decompose and truncate the system wave-function at cursor position.  */
-        void decomposePsi(Args args = Args::global()){
+        void decomposePsi(const Args& args) {
             ITensor U,S,V;
 
             // fetch nodelist in index "first"
@@ -160,8 +163,12 @@ namespace qcircuit {
             M[cursor.second] = S*V;
         }
 
-        /** @brief shifts cursor position to specified neighboring site `ind`   */
-        Spectrum shiftCursorTo(size_t ind, const Args& args = Args::global()) {
+        void decomposePsi() {
+            decomposePsi(default_args);
+        }
+
+        /** @brief shifts cursor position to specified neighboring site `ind` */
+        Spectrum shiftCursorTo(size_t ind, const Args& args) {
             assert(ind != cursor.first);
             assert(ind != cursor.second);
 
@@ -274,13 +281,35 @@ namespace qcircuit {
             return spec;
         }
 
-        /** @brief moves cursor to given destination. */
-        void moveCursorTo(size_t destination1, size_t destination2, const Args& args = Args::global()) {
-            auto path = topology.getRoute(cursor, std::make_pair(destination1, destination2));
+        Spectrum shiftCursorTo(size_t ind) {
+            return shiftCursorTo(ind, default_args);
+        }
 
+        /** @brief moves cursor along give path.
+         *
+         * If the cursor is positioned at (0, 1) and calling
+         * `moveCursorAlong({2, 3, 4, 5})`,
+         * the cursor will be moved to (4, 5) along the path.
+         */
+        void moveCursorAlong(const std::vector<size_t>& path, const Args& args) {
             for(auto site : path) {
                 shiftCursorTo(site, args);
             }
+        }
+
+        void moveCursorAlong(const std::vector<size_t>& path) {
+            moveCursorAlong(path, default_args);
+        }
+
+        /** @brief moves cursor to given destination along the shortest path. */
+        void moveCursorTo(size_t destination1, size_t destination2, const Args& args) {
+            auto path = topology.getRoute(cursor, std::make_pair(destination1, destination2));
+
+            moveCursorAlong(path);
+        }
+
+        void moveCursorTo(size_t destination1, size_t destination2) {
+            moveCursorTo(destination1, destination2, default_args);
         }
 
         /** @brief applies `op` at cursor position. */
@@ -301,10 +330,31 @@ namespace qcircuit {
          */
         void apply(const OneSiteGate& gate1,
                    const OneSiteGate& gate2,
-                   const Args& args = Args::global()) {
+                   const Args& args) {
             moveCursorTo(gate1.site, gate2.site, args);
             auto op = generateTensorOp(gate1) * generateTensorOp(gate2);
             this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
+        }
+
+        void apply(const OneSiteGate& gate1,
+                   const OneSiteGate& gate2) {
+            apply(gate1, gate2, default_args);
+        }
+
+        /**
+         * @brief applies one-site gates `gate1` onto the gate position and
+         * identity gate onto a dummy site.
+         *
+         * Cursor position will be automatically moved.
+         */
+        void apply(const OneSiteGate& gate1, const Args& args) {
+            Id gate2(topology.neighborsOf(gate1.site)[0].site);
+
+            this->apply(gate1, gate2, args);
+        }
+
+        void apply(const OneSiteGate& gate1) {
+            apply(gate1, default_args);
         }
 
         /**
@@ -312,11 +362,14 @@ namespace qcircuit {
          *
          * Cursor position will be automatically moved.
          */
-        void apply(const TwoSiteGate& gate,
-                   const Args& args = Args::global()) {
+        void apply(const TwoSiteGate& gate, const Args& args) {
             moveCursorTo(gate.site1, gate.site2, args);
             auto op = generateTensorOp(gate);
             this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
+        }
+
+        void apply(const TwoSiteGate& gate) {
+            apply(gate, default_args);
         }
 
         /** @brief returns the tensor operator corresponding to `gate`. */
@@ -348,7 +401,7 @@ namespace qcircuit {
         }
 
         /** @brief observes the qubit state at `site` and returns the projected qubit value (0 or 1). */
-        int observeQubit(size_t site, const Args& args = Args::global()) {
+        int observeQubit(size_t site, const Args& args) {
             auto prob0 = probabilityOfZero(site);
 
             std::uniform_real_distribution<> dist(0.0, 1.0);
@@ -363,6 +416,26 @@ namespace qcircuit {
             this->normalize();
 
             return state;
+        }
+
+        int observeQubit(size_t site) {
+            return observeQubit(site, default_args);
+        }
+
+        /** @brief sets cutoff. */
+        QCircuit& setCutoff(double cutoff) {
+            default_args.add("Cutoff", cutoff);
+            /*
+             * According to ITensor implementation,
+             * existing value will be just replaced.
+             */
+
+            return *this; // for method chaining
+        }
+
+        /** @brief returns cutoff. If not being set, returns 0.  */
+        double getCutoff() const {
+            return default_args.getReal("Cutoff", 0);
         }
 
         void normalize() {

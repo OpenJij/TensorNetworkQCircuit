@@ -10,7 +10,7 @@
 
 using namespace qcircuit;
 
-int main(int argc, char const* argv[]){
+int main(int argc, char const* argv[]) {
     const auto topology = make_ibmq_topology();
     topology.exportDotString("test.dot");
     const size_t size = topology.numberOfBits();
@@ -20,15 +20,16 @@ int main(int argc, char const* argv[]){
         init_qbits(size, std::make_pair(1.0, 0.0));
 
     QCircuit circuit(topology, init_qbits);
+    circuit.setCutoff(1e-5);
 
     /* Below is the demonstration of generating GHZ state */
 
-    circuit.apply(H(6), X(11), {"Cutoff", 1E-5});    // apply Hadamard and X to gate (6,11)
-    circuit.apply(H(10), Id(11), {"Cutoff", 1E-5});  // apply Hadamard to gate 10
-    circuit.apply(CNOT(10, 11), {"Cutoff", 1E-5});   // apply CNOT to gate (10, 11)
-    circuit.apply(CNOT(6, 11), {"Cutoff", 1E-5});    // apply CNOT to gate (6, 11)
-    circuit.apply(H(6), H(11), {"Cutoff", 1E-5});    // apply Hadamard to gate (6,11)
-    circuit.apply(H(10), Id(11), {"Cutoff", 1E-5});  // apply Hadamard to gate 10
+    circuit.apply(H(6), X(11));    // apply Hadamard and X to gate (6,11)
+    circuit.apply(H(10));          // apply Hadamard to gate 10
+    circuit.apply(CNOT(10, 11));   // apply CNOT to gate (10, 11)
+    circuit.apply(CNOT(6, 11));    // apply CNOT to gate (6, 11)
+    circuit.apply(H(6), H(11));    // apply Hadamard to gate (6,11)
+    circuit.apply(H(10));          // apply Hadamard to gate 10
 
     /* The result should be bell state (1/sqrt(2))(|000> + |111>) */
 
@@ -40,8 +41,8 @@ int main(int argc, char const* argv[]){
     QCircuit circuit000(topology, init_qbits, circuit.site()); // |0...000....0>
 
     QCircuit circuit111(topology, init_qbits, circuit.site()); // to be |0...111....0> just below
-    circuit111.apply(X(6), X(11), {"Cutoff", 1E-5});   //flip the qubit number (6,11)
-    circuit111.apply(X(10), Id(11), {"Cutoff", 1E-5}); //flip the qubit number 10
+    circuit111.apply(X(6), X(11)); // flip the qubit number (6,11)
+    circuit111.apply(X(10));       // flip the qubit number 10
 
     std::vector<ITensor> op;
     op.reserve(size);

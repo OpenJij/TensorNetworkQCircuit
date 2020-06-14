@@ -16,13 +16,14 @@ TEST(CALCULATION_TEST, GHZ_STATE_TEST) {
         init_qbits(size, make_pair(1.0, 0.0));
 
     QCircuit circuit(topology, init_qbits);
+    circuit.setCutoff(1e-5);
 
-    circuit.apply(H(6), X(11), {"Cutoff", 1E-5});
-    circuit.apply(H(10), Id(11), {"Cutoff", 1E-5});
-    circuit.apply(CNOT(10, 11), {"Cutoff", 1E-5});
-    circuit.apply(CNOT(6, 11), {"Cutoff", 1E-5});
-    circuit.apply(H(6), H(11), {"Cutoff", 1E-5});
-    circuit.apply(H(10), Id(11), {"Cutoff", 1E-5});
+    circuit.apply(H(6), X(11));
+    circuit.apply(H(10));
+    circuit.apply(CNOT(10, 11));
+    circuit.apply(CNOT(6, 11));
+    circuit.apply(H(6), H(11));
+    circuit.apply(H(10));
 
     /* The result should be bell state (1/sqrt(2))(|000> + |111>) */
 
@@ -32,10 +33,12 @@ TEST(CALCULATION_TEST, GHZ_STATE_TEST) {
      */
 
     QCircuit circuit000(topology, init_qbits, circuit.site());  // |0...000....0>
+    circuit000.setCutoff(1e-5);
 
     QCircuit circuit111(topology, init_qbits, circuit.site());  // to be |0...111....0> just below
-    circuit111.apply(X(6), X(11), {"Cutoff", 1E-5});   // flip the qubit number (6,11)
-    circuit111.apply(X(10), Id(11), {"Cutoff", 1E-5}); //flip the qubit number 10
+    circuit111.setCutoff(1e-5);
+    circuit111.apply(X(6), X(11)); // flip the qubit number (6,11)
+    circuit111.apply(X(10));       // flip the qubit number 10
 
     vector<ITensor> op;
     op.reserve(size);
@@ -61,22 +64,23 @@ TEST(CALCULATION_TEST, LOOP_TEST) {
         init_qbits(size, make_pair(1.0, 0.0));
 
     QCircuit circuit(topology, init_qbits);
+    circuit.setCutoff(1e-5);
 
-    circuit.apply(H(0), X(1), {"Cutoff", 1E-5});
-    circuit.apply(H(2), Id(1), {"Cutoff", 1E-5});
-    circuit.apply(CNOT(2, 1), {"Cutoff", 1E-5});
-    circuit.apply(Id(3), Id(4), {"Cutoff", 1E-5}); // make a detour
-    circuit.apply(Id(5), Id(6), {"Cutoff", 1E-5}); //
-    circuit.apply(Id(7), Id(0), {"Cutoff", 1E-5}); //
-    circuit.apply(CNOT(0, 1), {"Cutoff", 1E-5});
-    circuit.apply(H(0), H(1), {"Cutoff", 1E-5});
-    circuit.apply(H(2), Id(1), {"Cutoff", 1E-5});
+    circuit.apply(H(0), X(1));
+    circuit.apply(H(2), Id(1));
+    circuit.apply(CNOT(2, 1));
+    circuit.moveCursorAlong({3, 4, 5, 6, 7, 0}); // make a detour
+    circuit.apply(CNOT(0, 1));
+    circuit.apply(H(0), H(1));
+    circuit.apply(H(2), Id(1));
 
     QCircuit circuit000(topology, init_qbits, circuit.site());
+    circuit000.setCutoff(1e-5);
 
     QCircuit circuit111(topology, init_qbits, circuit.site());
-    circuit111.apply(X(0), X(1), {"Cutoff", 1E-5});
-    circuit111.apply(X(2), Id(3), {"Cutoff", 1E-5});
+    circuit111.setCutoff(1e-5);
+    circuit111.apply(X(0), X(1));
+    circuit111.apply(X(2), Id(3));
 
     vector<ITensor> op;
     op.reserve(size);
@@ -101,11 +105,13 @@ TEST(CALCULATION_TEST, SWAP_TEST) {
         init_qbits(size, make_pair(1.0, 0.0));
 
     QCircuit circuit(topology, init_qbits);
-    circuit.apply(Id(0), X(1), {"Cutoff", 1E-5});
-    circuit.apply(Swap(0, 1), {"Cutoff", 1E-5});
+    circuit.setCutoff(1e-5);
+    circuit.apply(Id(0), X(1));
+    circuit.apply(Swap(0, 1));
 
     QCircuit circuit10(topology, init_qbits, circuit.site());
-    circuit10.apply(X(0), Id(1), {"Cutoff", 1E-5});
+    circuit10.setCutoff(1e-5);
+    circuit10.apply(X(0), Id(1));
 
     vector<ITensor> op;
     op.reserve(size);
@@ -127,7 +133,7 @@ TEST(CALCULATION_TEST, OBSERVATION_TEST) {
         init_qbits(size, make_pair(1.0, 0.0));
 
     QCircuit circuit(topology, init_qbits);
-    circuit.apply(H(0), Id(1), {"Cutoff", 1E-5}); // create (|0>+|1>)/sqrt(2)
+    circuit.apply(H(0), Id(1)); // create (|0>+|1>)/sqrt(2)
     auto zero_weight = circuit.probabilityOfZero(0);
     EXPECT_NEAR(0.5, zero_weight, 1e-3); // probability to observe 0 should be 1/2.
 
@@ -146,7 +152,7 @@ TEST(CALCULATION_TEST, OBSERVATION_TEST) {
     } else {
         std::cout << "checking overlap with |1>" << std::endl;
         QCircuit circuit1(topology, init_qbits, circuit.site());
-        circuit1.apply(X(0), Id(1), {"Cutoff", 1E-5});
+        circuit1.apply(X(0), Id(1));
         EXPECT_NEAR(1, abs(overlap(circuit, op, circuit1)), 1e-3);
     }
 }
