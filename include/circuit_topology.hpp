@@ -8,6 +8,8 @@
 #include <queue>
 #include <algorithm>
 #include <fstream>
+#include <sstream>
+#include "qcircuit_exception.hpp"
 
 namespace qcircuit {
 
@@ -35,8 +37,38 @@ namespace qcircuit {
                                            neighbors_list(num_bits) {}
 
         void generateLink(size_t site1, size_t site2) {
-            // TODO: assert or throw Exception when index exceeds number of bits.
-            // TODO: assert or throw Exception when multiple link is specified.
+            /* Check invalid site index */
+            if(site1 >= num_bits || site2 >= num_bits) {
+                std::stringstream ss;
+                ss << "Link can't be generated between (" << site1 << ", " << site2
+                   << ") : Index exceeds the number of qubits or ";
+                throw QCircuitException(ss.str());
+            } else if(site1 < 0 || site2 < 0) {
+                std::stringstream ss;
+                ss << "Link can't be generated between (" << site1 << ", " << site2
+                   << ") : Negative index specified";
+                throw QCircuitException(ss.str());
+            }
+
+            /* Check whether the specified link already exists. */
+            {
+                auto itr = std::find_if(neighbors_list[site1].begin(), neighbors_list[site1].end(),
+                                        [&](const Neighbor& nei) { return nei.site == site2; });
+                if(itr != neighbors_list[site1].end()) {
+                    std::stringstream ss;
+                    ss << "Link can't be generated between (" << site1 << ", " << site2
+                       << ") : Link already exists";
+                    throw QCircuitException(ss.str());
+                }
+            }
+
+            /* Check number of links from the sites */
+            if(neighbors_list[site1].size() >= 3 || neighbors_list[site2].size() >= 3) {
+                std::stringstream ss;
+                ss << "Link can't be generated between (" << site1 << ", " << site2
+                   << ") : More than 3 links from a node is not allowed";
+                throw QCircuitException(ss.str());
+            }
 
             neighbors_list[site1].emplace_back(site2, num_links);
             neighbors_list[site2].emplace_back(site1, num_links);
@@ -104,8 +136,10 @@ namespace qcircuit {
                 result.push_back(destination.first);
                 site = destination.second;
             } else {
-                // TODO: assert or throw Exception.
-                // If reach this else branch, given sites are unreachable.
+                std::stringstream ss;
+                ss << "Path to (" << destination.first << ", "
+                   << destination.second << ") not found";
+                throw QCircuitException(ss.str());
             }
 
             while(site != origin.first && site != origin.second) {
@@ -114,6 +148,35 @@ namespace qcircuit {
             }
             std::reverse(result.begin(), result.end());
             return result;
+        }
+
+        /**
+         * @brief returns true if the circuit is a connected graph,
+         * i.e. there is a path between every pair of qubits (vertices).
+         *
+         * Breadth First Search algorithm is used.
+         */
+        bool isConnectedGraph() const {
+            std::vector<bool> reached(num_bits, false);
+
+            std::queue<size_t> queue;
+            reached[0] = true;
+            queue.push(0);
+
+            while(!queue.empty()) {
+                auto site = queue.front();
+                queue.pop(); // pop() returns nothing.
+
+                for(auto neighbor : neighbors_list[site]) {
+                    if(!reached[neighbor.site]) {
+                        reached[neighbor.site] = true;
+                        queue.push(neighbor.site);
+                    }
+                }
+            }
+
+            return std::all_of(reached.begin(), reached.end(),
+                               [](size_t x) { return x; });
         }
 
         /**

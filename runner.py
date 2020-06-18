@@ -10,6 +10,7 @@ def main():
     circuit.moveCursorAlong(path)
     print("detour along : ", end="")
     print(*path)
+    print("Now the curosor is at {}".format(circuit.getCursor()))
 
     print("Each qubit are initialized with |0>")
 

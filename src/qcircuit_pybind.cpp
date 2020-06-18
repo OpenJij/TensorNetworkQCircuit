@@ -15,6 +15,7 @@ namespace qcircuit {
             .def("apply", py::overload_cast<const OneSiteGate&, const OneSiteGate&>(&QCircuit::apply))
             .def("apply", py::overload_cast<const OneSiteGate&>(&QCircuit::apply))
             .def("apply", py::overload_cast<const TwoSiteGate&>(&QCircuit::apply))
+            .def("getCursor", &QCircuit::getCursor)
             .def("moveCursorAlong", py::overload_cast<const std::vector<size_t>&>(&QCircuit::moveCursorAlong))
             .def("probabilityOfZero", &QCircuit::probabilityOfZero)
             .def("observeQubit", py::overload_cast<size_t>(&QCircuit::observeQubit))

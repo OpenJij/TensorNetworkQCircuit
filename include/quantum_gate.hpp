@@ -11,6 +11,8 @@ namespace qcircuit {
      */
     class Gate {
     public:
+        virtual ~Gate() {}
+
         /**
          * @brief returns corresponding tensor operator.
          */
@@ -27,6 +29,7 @@ namespace qcircuit {
         const size_t site; //!< @brief Site (physical index) ID
 
         OneSiteGate(size_t site) : site(site) {}
+        virtual ~OneSiteGate() {}
     };
 
     /**
@@ -182,6 +185,7 @@ namespace qcircuit {
         const size_t site2; //!< @brief Site (physical index) ID
 
         TwoSiteGate(size_t site1, size_t site2) : site1(site1), site2(site2) {}
+        virtual ~TwoSiteGate() {}
     };
 
     /**

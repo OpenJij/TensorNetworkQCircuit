@@ -1,8 +1,22 @@
 #include <gtest/gtest.h>
 #include <cmath>
+#include <utility>
 #include <itensor/util/print_macro.h>
 #include <qcircuit.hpp>
 #include <circuits.hpp>
+
+TEST(QCIRCUIT_TEST, CHECK_INITIAL_CURSOR_POSITION) {
+    using namespace qcircuit;
+    CircuitTopology topology(4);
+
+    topology.generateLink(0, 3);
+    topology.generateLink(0, 2);
+    topology.generateLink(0, 1);
+
+    QCircuit circuit(topology);
+
+    EXPECT_EQ((std::pair<size_t, size_t>(0, 1)), circuit.getCursor());
+}
 
 TEST(CALCULATION_TEST, GHZ_STATE_TEST) {
     using namespace std;

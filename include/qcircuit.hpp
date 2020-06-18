@@ -12,6 +12,7 @@
 #include <array>
 #include "circuit_topology.hpp"
 #include "quantum_gate.hpp"
+#include "qcircuit_exception.hpp"
 
 namespace qcircuit {
     using namespace itensor;
@@ -55,6 +56,10 @@ namespace qcircuit {
                  const std::vector<Index>& physical_indices = std::vector<Index>()) :
             a(), s(physical_indices), topology(topology), random_engine(std::random_device()()) {
 
+            if(!topology.isConnectedGraph()) {
+                throw QCircuitException("Invalid circuit topology : Some nodes are unreachable");
+            }
+
             /* Initialize link indices */
             a.reserve(topology.numberOfLinks());
             for(size_t i = 0; i < topology.numberOfLinks();i++) {
@@ -95,8 +100,19 @@ namespace qcircuit {
                 }
             }
 
-            cursor.first = 0;
-            cursor.second = 1;
+            /* set cursor position */
+            {
+                cursor.first = 0;
+
+                /* find the minimum numbered bit of neighbors of the bit 0. */
+                size_t index = this->size();
+                for(const auto& neighbor : topology.neighborsOf(cursor.first)) {
+                    if(neighbor.site < index) {
+                        index = neighbor.site;
+                    }
+                }
+                cursor.second = index;
+            }
 
             Psi = M[cursor.first]*M[cursor.second];
         }
