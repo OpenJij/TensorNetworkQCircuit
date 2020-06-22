@@ -43,10 +43,17 @@ namespace qcircuit {
                 ss << "Link can't be generated between (" << site1 << ", " << site2
                    << ") : Index exceeds the number of qubits or ";
                 throw QCircuitException(ss.str());
-            } else if(site1 < 0 || site2 < 0) {
+            }
+            if(site1 < 0 || site2 < 0) {
                 std::stringstream ss;
                 ss << "Link can't be generated between (" << site1 << ", " << site2
                    << ") : Negative index specified";
+                throw QCircuitException(ss.str());
+            }
+            if(site1 == site2) {
+                std::stringstream ss;
+                ss << "Link can't be generated between (" << site1 << ", " << site2
+                   << ") : Same indices specified";
                 throw QCircuitException(ss.str());
             }
 

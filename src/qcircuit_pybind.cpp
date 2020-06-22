@@ -19,6 +19,7 @@ namespace qcircuit {
             .def("moveCursorAlong", py::overload_cast<const std::vector<size_t>&>(&QCircuit::moveCursorAlong))
             .def("probabilityOfZero", &QCircuit::probabilityOfZero)
             .def("observeQubit", py::overload_cast<size_t>(&QCircuit::observeQubit))
-            .def_property("cutoff", &QCircuit::getCutoff, &QCircuit::setCutoff);
+            .def_property("cutoff", &QCircuit::getCutoff, &QCircuit::setCutoff)
+            .def_property("max_dim", &QCircuit::getMaxDim, &QCircuit::setMaxDim);
     }
 }

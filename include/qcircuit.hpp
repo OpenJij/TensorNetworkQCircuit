@@ -454,6 +454,23 @@ namespace qcircuit {
             return default_args.getReal("Cutoff", 0);
         }
 
+        /** @brief sets cutoff. */
+        QCircuit& setMaxDim(int max_dim) {
+            default_args.add("Maxm", max_dim);
+            /*
+             * According to ITensor implementation,
+             * existing value will be just replaced.
+             */
+
+            return *this; // for method chaining
+        }
+
+        /** @brief returns maximum bond dimension to be kept.
+            If not being set, returns 0.  */
+        int getMaxDim() const {
+            return default_args.getInt("Maxm", 0);
+        }
+
         void normalize() {
             Psi /= norm(Psi);
         }
