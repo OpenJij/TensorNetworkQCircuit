@@ -7,10 +7,10 @@ namespace qcircuit {
     void init_circuit_topology(py::module& m) {
         py::class_<CircuitTopology>(m, "CircuitTopology")
             .def(py::init<size_t>())
-            .def("generateLink", &CircuitTopology::generateLink)
-            .def("numberOfBits", &CircuitTopology::numberOfBits)
-            .def("numberOfLinks", &CircuitTopology::numberOfLinks)
-            .def("exportDotString", &CircuitTopology::exportDotString,
+            .def("generate_link", &CircuitTopology::generateLink)
+            .def("number_of_bits", &CircuitTopology::numberOfBits)
+            .def("number_of_links", &CircuitTopology::numberOfLinks)
+            .def("export_dot_string", &CircuitTopology::exportDotString,
                  py::arg("filename"),
                  py::arg("layout") = "neato",
                  py::arg("shape") = "circle");
