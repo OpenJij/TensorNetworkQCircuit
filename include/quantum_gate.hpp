@@ -1,6 +1,7 @@
 //Copyright (c) 2020 Jij Inc.
 
 #pragma once
+#include <complex>
 #include <itensor/all.h>
 
 namespace qcircuit {
@@ -169,9 +170,38 @@ namespace qcircuit {
         }
     };
 
+    /**
+     * @brief Universal unitary gate.
+     *
+     * U(theta, phi, lambda) = R_z(phi)R_y(theta)R_z(lambda),
+     * where R_z(phi) = exp(-i theta Z / 2),  R_y(phi) = exp(-i theta Y / 2).
+     * Z and Y are the Pauli matrices for each axis.
+     * This can express any element of SU(2).
+     */
+    class UniversalUnitary : public OneSiteGate {
+    public:
+      const double theta;
+      const double phi;
+      const double lambda;
 
+      UniversalUnitary(size_t site,
+                       double theta, double phi, double lambda) :
+       OneSiteGate(site), theta(theta), phi(phi), lambda(lambda) {}
 
+      ITensor op(const std::vector<Index>& slist) const override {
+          std::complex<double> alpha = std::exp(-1_i*(phi+lambda)/2)*cos(theta/2);
+          std::complex<double> beta = -std::exp(-1_i*(phi-lambda)/2)*sin(theta/2);
 
+          auto s = slist[site];
+          ITensor ret(s, prime(s));
+          ret.set(s=1, prime(s)=1, alpha);
+          ret.set(s=1, prime(s)=2, beta);
+          ret.set(s=2, prime(s)=1, -std::conj(beta));
+          ret.set(s=2, prime(s)=2, std::conj(alpha));
+
+          return ret;
+      }
+    };
 
 
     /**

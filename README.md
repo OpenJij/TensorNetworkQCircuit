@@ -91,10 +91,10 @@ def main():
     circuit.cutoff = 1e-5
 
     circuit.apply(H(0))
-    prob0 = circuit.probabilityOfZero(0)
+    prob0 = circuit.probability_of_zero(0)
     print("Probability to observe |0>: {:.3f}".format(prob0)) # should be 1/2
 
-    bit = circuit.observeQubit(0)  # projection
+    bit = circuit.observe_qubit(0)  # projection
     print("Qubit 0 is observed as |{}>".format(bit))
 
 

@@ -8,7 +8,7 @@ namespace qcircuit {
     void init_circuits(py::module&);
     void init_quantum_gate(py::module&);
 
-    PYBIND11_MODULE(qcircuit, m) {
+    PYBIND11_MODULE(_core, m) {
         init_qcircuit(m);
         init_circuit_topology(m);
         init_circuits(m);
