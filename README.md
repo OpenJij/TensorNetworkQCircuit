@@ -82,23 +82,41 @@ At the root directory, `pip install .` is available.
 If your own ITensor is in a different place from `external/itensor`,
 specify the location by editting `setup.py`.
 
+### Python interface
 ```python
-from qcircuit import *
-
-def main():
-    topology = make_ibmq_topology()
-    circuit = QCircuit(topology)
-    circuit.cutoff = 1e-5
-
-    circuit.apply(H(0))
-    prob0 = circuit.probability_of_zero(0)
-    print("Probability to observe |0>: {:.3f}".format(prob0)) # should be 1/2
-
-    bit = circuit.observe_qubit(0)  # projection
-    print("Qubit 0 is observed as |{}>".format(bit))
+from qcircuit.core import *
 
 
-if __name__ == "__main__":
-    main()
+topology = make_ibmq_topology()
+circuit = QCircuit(topology)
+circuit.cutoff = 1e-5
 
+circuit.apply(H(0))
+prob0 = circuit.probability_of_zero(0)
+print("Probability to observe |0>: {:.3f}".format(prob0)) # should be 1/2
+
+bit = circuit.observe_qubit(0)  # projection
+print("Qubit 0 is observed as |{}>".format(bit))
+```
+
+### QASM interface
+Currently under development.
+
+```python
+from qcircuit.qasm import *
+
+
+data = """
+OPENQASM 2.0;
+
+creg c[2];
+qreg q[2];
+U(pi, 0, pi) q[0];
+measure q[0] -> c[0];
+"""
+
+engine = QASMInterpreter(data)
+engine.execute()
+
+print(engine._creg)
 ```
