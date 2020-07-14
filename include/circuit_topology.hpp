@@ -69,14 +69,6 @@ namespace qcircuit {
                 }
             }
 
-            /* Check number of links from the sites */
-            if(neighbors_list[site1].size() >= 3 || neighbors_list[site2].size() >= 3) {
-                std::stringstream ss;
-                ss << "Link can't be generated between (" << site1 << ", " << site2
-                   << ") : More than 3 links from a node is not allowed";
-                throw QCircuitException(ss.str());
-            }
-
             neighbors_list[site1].emplace_back(site2, num_links);
             neighbors_list[site2].emplace_back(site1, num_links);
             num_links++;

@@ -4,8 +4,8 @@ project (tensor_network_qcircuit CXX)
 enable_testing()
 
 set(ITENSOR_DIR "external/itensor")
-set(CMAKE_CXX_FLAGS "-std=c++17 -O2")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -std=c++17 -DDEBUG")
+set(CMAKE_CXX_FLAGS "-std=c++17 -O2 -fopenmp")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -std=c++17 -DDEBUG -fopenmp")
 # DDEBUG is an option for ITensor.
 # If not defining the flag, EVERY assert() will be disabled.
 

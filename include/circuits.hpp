@@ -102,4 +102,14 @@ namespace qcircuit {
 
         return topology;
     }
+
+    CircuitTopology make_alltoall_topology(size_t size){
+        CircuitTopology topology(size);
+        for(size_t i = 0; i < size; i++){
+            for(size_t j = i+1; j < size; j++){
+                topology.generateLink(i, j);
+            }
+        }
+        return topology;
+    }
 }

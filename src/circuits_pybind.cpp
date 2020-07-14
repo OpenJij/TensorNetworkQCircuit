@@ -9,5 +9,7 @@ namespace qcircuit {
         m.def("make_chain", &make_chain,
               py::arg("size"),
               py::arg("periodic") = true);
+
+        m.def("make_alltoall_topology", &make_alltoall_topology);
     }
 }
