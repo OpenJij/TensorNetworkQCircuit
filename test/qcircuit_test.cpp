@@ -215,6 +215,11 @@ TEST(CALCULATION_TEST, CIRCUIT_WITH_MULTIPLE_LINKS) {
     circuit111111.apply(X(4));
     circuit111111.apply(X(5));
 
+    // the following code causes segfault
+    // circuit111111.apply(X(0), X(1));
+    // circuit111111.apply(X(2), X(3));
+    // circuit111111.apply(X(4), X(5));
+
     //identity operator
     vector<ITensor> op;
     op.reserve(size);
@@ -245,6 +250,7 @@ TEST(CALCULATION_TEST, CIRCUIT_WITH_ALL_TO_ALL_CONNECTIVITY) {
     cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
     circuit.apply(CNOT(0,2));
     cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+    // output is "cursor: 1 2" where expected one is "cursor: 0 2"
     circuit.apply(CNOT(0,3));
     cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
     circuit.apply(CNOT(0,4));
