@@ -79,25 +79,29 @@ namespace qcircuit {
             for(size_t i = 0;i < this->size();i++) {
                 auto neighbors = topology.neighborsOf(i);
 
-                switch(neighbors.size()) {
-                case 1:
-                    M.emplace_back(s[i],   a[neighbors[0].link]);
-                    M[i].set(      s[i]=1, a[neighbors[0].link]=1, init_qubits[i].first);
-                    M[i].set(      s[i]=2, a[neighbors[0].link]=1, init_qubits[i].second);
-                    break;
-                case 2:
-                    M.emplace_back(s[i],   a[neighbors[0].link],   a[neighbors[1].link]);
-                    M[i].set(      s[i]=1, a[neighbors[0].link]=1, a[neighbors[1].link]=1, init_qubits[i].first);
-                    M[i].set(      s[i]=2, a[neighbors[0].link]=1, a[neighbors[1].link]=1, init_qubits[i].second);
-                    break;
-                case 3:
-                    M.emplace_back(s[i],   a[neighbors[0].link]  , a[neighbors[1].link]  , a[neighbors[2].link]);
-                    M[i].set(      s[i]=1, a[neighbors[0].link]=1, a[neighbors[1].link]=1, a[neighbors[2].link]=1, init_qubits[i].first);
-                    M[i].set(      s[i]=2, a[neighbors[0].link]=1, a[neighbors[1].link]=1, a[neighbors[2].link]=1, init_qubits[i].second);
-                    break;
-                default:
-                    assert(false);
+                std::vector<Index> ind_list;
+                ind_list.reserve(neighbors.size()+1);
+                std::vector<IndexVal> ind_val_list;
+                ind_val_list.reserve(neighbors.size()+1);
+
+                //fill ind_list
+                ind_list.push_back(s[i]);
+                for(const auto& neighbor : neighbors){
+                    ind_list.push_back(a[neighbor.link]);
                 }
+
+                //fill ind_val_list
+                ind_val_list.push_back(s[i](1));
+                for(const auto& neighbor : neighbors){
+                    ind_val_list.push_back(a[neighbor.link](1));
+                }
+
+                //insert into M
+                M.emplace_back(ind_list);
+                ind_val_list[0] = s[i](1);
+                M[i].set(ind_val_list, init_qubits[i].first);
+                ind_val_list[0] = s[i](2);
+                M[i].set(ind_val_list, init_qubits[i].second);
             }
 
             /* set cursor position */
@@ -158,19 +162,16 @@ namespace qcircuit {
             for(auto it = list.begin(); it != pend; ++it){
                 newlist.push_back(*it);
             }
-            switch(newlist.size()) {
-            case 0:
-                U = ITensor(s[cursor.first]);
-                break;
-            case 1:
-                U = ITensor(s[cursor.first], a[newlist[0].link]);
-                break;
-            case 2:
-                U = ITensor(s[cursor.first], a[newlist[0].link], a[newlist[1].link]);
-                break;
-            default:
-                assert(false);
+
+            // set U
+            std::vector<Index> ind_list;
+            ind_list.reserve(newlist.size()+1);
+            ind_list.push_back(s[cursor.first]);
+            for(const auto& elem : newlist){
+                ind_list.push_back(a[elem.link]);
             }
+
+            U = ITensor(ind_list);
 
             Spectrum spec = svd(Psi, U, S, V, args);
             a[link_ind] = commonIndex(U,S);
@@ -226,19 +227,16 @@ namespace qcircuit {
                 for(auto it = list.begin(); it != pend; ++it){
                     newlist.push_back(*it);
                 }
-                switch(newlist.size()){
-                case 0:
-                    V = ITensor(s[cursor.second]);
-                    break;
-                case 1:
-                    V = ITensor(s[cursor.second], a[newlist[0].link]);
-                    break;
-                case 2:
-                    V = ITensor(s[cursor.second], a[newlist[0].link], a[newlist[1].link]);
-                    break;
-                default:
-                    assert(false);
+
+                //set U
+                std::vector<Index> ind_list;
+                ind_list.reserve(newlist.size()+1);
+                ind_list.push_back(s[cursor.first]);
+                for(const auto& elem : newlist){
+                    ind_list.push_back(a[elem.link]);
                 }
+
+                U = ITensor(ind_list);
 
                 spec = svd(Psi, U, S, V, args);
 
@@ -267,19 +265,16 @@ namespace qcircuit {
                 for(auto it = list.begin(); it != pend; ++it){
                     newlist.push_back(*it);
                 }
-                switch(newlist.size()){
-                case 0:
-                    U = ITensor(s[cursor.first]);
-                    break;
-                case 1:
-                    U = ITensor(s[cursor.first], a[newlist[0].link]);
-                    break;
-                case 2:
-                    U = ITensor(s[cursor.first], a[newlist[0].link], a[newlist[1].link]);
-                    break;
-                default:
-                    assert(false);
+
+                //set U
+                std::vector<Index> ind_list;
+                ind_list.reserve(newlist.size()+1);
+                ind_list.push_back(s[cursor.first]);
+                for(const auto& elem : newlist){
+                    ind_list.push_back(a[elem.link]);
                 }
+
+                U = ITensor(ind_list);
 
                 spec = svd(Psi, U, S, V, args);
 

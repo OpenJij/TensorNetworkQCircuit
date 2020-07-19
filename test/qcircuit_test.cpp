@@ -170,3 +170,123 @@ TEST(CALCULATION_TEST, OBSERVATION_TEST) {
         EXPECT_NEAR(1, abs(overlap(circuit, op, circuit1)), 1e-3);
     }
 }
+
+TEST(CALCULATION_TEST, CIRCUIT_WITH_MULTIPLE_LINKS) {
+    using namespace std;
+    using namespace qcircuit;
+    size_t size = 6;
+    CircuitTopology topology(size);
+    topology.generateLink(0, 1);
+    topology.generateLink(0, 2);
+    topology.generateLink(0, 3);
+    topology.generateLink(0, 4);
+    topology.generateLink(0, 5);
+
+    vector<pair<complex<double>, complex<double>>>
+        init_qbits(size, make_pair(1.0, 0.0));
+
+    // generate maximal entangled state
+    QCircuit circuit(topology, init_qbits);
+    circuit.setCutoff(1e-5);
+    circuit.apply(H(0));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+    circuit.apply(CNOT(0,1));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+    circuit.apply(CNOT(0,2));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+    circuit.apply(CNOT(0,3));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+    circuit.apply(CNOT(0,4));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+    circuit.apply(CNOT(0,5));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+
+    // |000000>
+    QCircuit circuit000000(topology, init_qbits, circuit.site());
+    circuit000000.setCutoff(1e-5);
+
+    // |111111>
+    QCircuit circuit111111(topology, init_qbits, circuit.site());
+    circuit111111.setCutoff(1e-5);
+    circuit111111.apply(X(0));
+    circuit111111.apply(X(1));
+    circuit111111.apply(X(2));
+    circuit111111.apply(X(3));
+    circuit111111.apply(X(4));
+    circuit111111.apply(X(5));
+
+    // the following code causes segfault
+    // circuit111111.apply(X(0), X(1));
+    // circuit111111.apply(X(2), X(3));
+    // circuit111111.apply(X(4), X(5));
+
+    //identity operator
+    vector<ITensor> op;
+    op.reserve(size);
+    for(size_t i = 0;i < size;i++) {
+        op.push_back(circuit.generateTensorOp(Id(i)));
+    }
+
+    EXPECT_NEAR(1/sqrt(2), abs(overlap(circuit, op, circuit000000)), 1e-3);
+    EXPECT_NEAR(1/sqrt(2), abs(overlap(circuit, op, circuit111111)), 1e-3);
+    EXPECT_NEAR(1.0 , abs(overlap(circuit, op, circuit)), 1e-3);
+}
+
+TEST(CALCULATION_TEST, CIRCUIT_WITH_ALL_TO_ALL_CONNECTIVITY) {
+    using namespace std;
+    using namespace qcircuit;
+    size_t size = 6;
+    CircuitTopology topology = make_alltoall_topology(size);
+
+    vector<pair<complex<double>, complex<double>>>
+        init_qbits(size, make_pair(1.0, 0.0));
+
+    // generate maximal entangled state
+    QCircuit circuit(topology, init_qbits);
+    circuit.setCutoff(1e-5);
+    circuit.apply(H(0));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+    circuit.apply(CNOT(0,1));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+    circuit.apply(CNOT(0,2));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+    // output is "cursor: 1 2" where expected one is "cursor: 0 2"
+    circuit.apply(CNOT(0,3));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+    circuit.apply(CNOT(0,4));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+    circuit.apply(CNOT(0,5));
+    cout << "cursor: " << circuit.getCursor().first << " " << circuit.getCursor().second << endl;
+
+    // |000000>
+    QCircuit circuit000000(topology, init_qbits, circuit.site());
+    circuit000000.setCutoff(1e-5);
+
+    // |111111>
+    QCircuit circuit111111(topology, init_qbits, circuit.site());
+    circuit111111.setCutoff(1e-5);
+    cout << "cursor: " << circuit111111.getCursor().first << " " << circuit111111.getCursor().second << endl;
+    circuit111111.apply(X(0));                                                   
+    cout << "cursor: " << circuit111111.getCursor().first << " " << circuit111111.getCursor().second << endl;
+    circuit111111.apply(X(1));                                                   
+    cout << "cursor: " << circuit111111.getCursor().first << " " << circuit111111.getCursor().second << endl;
+    circuit111111.apply(X(2));                                                   
+    cout << "cursor: " << circuit111111.getCursor().first << " " << circuit111111.getCursor().second << endl;
+    circuit111111.apply(X(3));                                                   
+    cout << "cursor: " << circuit111111.getCursor().first << " " << circuit111111.getCursor().second << endl;
+    circuit111111.apply(X(4));                                                   
+    cout << "cursor: " << circuit111111.getCursor().first << " " << circuit111111.getCursor().second << endl;
+    circuit111111.apply(X(5));                                                   
+    cout << "cursor: " << circuit111111.getCursor().first << " " << circuit111111.getCursor().second << endl;
+
+    //identity operator
+    vector<ITensor> op;
+    op.reserve(size);
+    for(size_t i = 0;i < size;i++) {
+        op.push_back(circuit.generateTensorOp(Id(i)));
+    }
+
+    EXPECT_NEAR(1/sqrt(2), abs(overlap(circuit, op, circuit000000)), 1e-3);
+    EXPECT_NEAR(1/sqrt(2), abs(overlap(circuit, op, circuit111111)), 1e-3);
+    EXPECT_NEAR(1.0 , abs(overlap(circuit, op, circuit)), 1e-3);
+}
