@@ -1,3 +1,5 @@
+## This file isn't used currently.
+
 import qiskit.qasm.node
 
 def eval_expression(exp, env):

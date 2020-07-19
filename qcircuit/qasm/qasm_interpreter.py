@@ -1,6 +1,8 @@
 import qiskit.qasm
 import qiskit.qasm.node
 from qcircuit.core import *
+from .registers import QuantumRegisters, ClassicalRegisters
+
 
 class QASMInterpreter:
     def __init__(self, data):
@@ -8,11 +10,8 @@ class QASMInterpreter:
         topology = make_ibmq_topology()
         self._engine = QCircuit(topology)
         self._max_qubit = topology.number_of_bits()
-        self._creg = [0] * self._max_qubit
-        self._qreg_top = 0
-        self._qreg_info = {}
-        self._creg_top = 0
-        self._creg_info = {}
+        self._qregs = QuantumRegisters(self._max_qubit)
+        self._cregs = ClassicalRegisters()
 
 
     def execute(self):
@@ -27,11 +26,11 @@ class QASMInterpreter:
         elif type(stat) == qiskit.qasm.node.Qreg:
             name = stat.children[0].name
             size = stat.children[0].index
-            self._add_qreg(name, size)
+            self._qregs.add(name, size)
         elif type(stat) == qiskit.qasm.node.Creg:
             name = stat.children[0].name
             size = stat.children[0].index
-            self._add_creg(name, size)
+            self._cregs.add(name, size)
         elif type(stat) == qiskit.qasm.node.Barrier:
             pass # TODO
         elif type(stat) == qiskit.qasm.node.Gate:
@@ -46,45 +45,10 @@ class QASMInterpreter:
             self._call_cnot(stat.children)
         elif type(stat) == qiskit.qasm.node.CustomUnitary:
             self._call_custom_unitary(stat.children)
+        elif type(stat) == qiskit.qasm.node.If:
+            self._process_if_statement(stat.children)
         else:
             raise Exception('Unimplemented operation')
-
-
-    def _add_qreg(self, name, size):
-        if self._qreg_top + size > self._max_qubit:
-            pass # TODO (throw exception)
-
-        self._qreg_info[name] = RegisterInfo(self._qreg_top, size)
-        self._qreg_top += size
-
-
-    def _get_qreg_index(self, name, index):
-        qreg = self._qreg_info[name]
-        if index <= qreg.size:
-            pass # TODO (throw exception)
-
-        return qreg.start + index
-
-
-    def _get_qreg_size(self, name):
-        return self._qreg_info[name].size
-
-
-    def _add_creg(self, name, size):
-        self._creg_info[name] = RegisterInfo(self._creg_top, size)
-        self._creg_top += size
-
-
-    def _get_creg_index(self, name, index):
-        creg = self._creg_info[name]
-        if index <= creg.size:
-            pass # TODO (throw exception)
-
-        return creg.start + index
-
-
-    def _get_creg_size(self, name):
-        return self._creg_info[name].size
 
 
     def _define_gate(self, args):
@@ -93,33 +57,38 @@ class QASMInterpreter:
 
     def _measure(self, args):
         if type(args[0]) == qiskit.qasm.node.IndexedId and type(args[1]) == qiskit.qasm.node.IndexedId:
-            qreg_index = self._get_qreg_index(args[0].name, args[0].index)
-            creg_index = self._get_creg_index(args[1].name, args[1].index)
-
-            self._creg[creg_index] = self._engine.observe_qubit(qreg_index)
+            qubit_index = self._qregs.get_hardware_index(args[0].name, args[0].index)
+            observed = self._engine.observe_qubit(qubit_index)
+            self._cregs.set(args[1].name, args[1].index, observed)
         elif type(args[0]) == qiskit.qasm.node.Id and type(args[1]) == qiskit.qasm.node.Id:
-            if self._get_qreg_size(args[0].name) != self._get_creg_size(args[1].name):
+            if self._qregs.get_size(args[0].name) != self._cregs.get_size(args[1].name):
                 pass # TODO (throw Exception)
 
-            size = self._get_qreg_size(args[1].name)
+            size = self._qregs.get_size(args[0].name)
             for i in range(size):
-                qreg_index = self._get_qreg_index(args[0].name, args[0].index + i)
-                creg_index = self._get_creg_index(args[1].name, args[1].index + i)
-
-                self._creg[creg_index] = self._engine.observe_qubit(qreg_index)
+                qubit_index = self._qregs.get_hardware_index(args[0].name, i)
+                observed = self._engine.observe_qubit(qubit_index)
+                self._cregs.set(args[1].name, i, observed)
         else:
             pass # TODO (throw Exception)
 
 
     def _reset(self, args):
-        pass # TODO
+        if type(args[0]) == qiskit.qasm.node.IndexedId:
+            qubit_index = self._qregs.get_hardware_index(args[0].name, args[0].index)
+            # self._engine.reset_qubit(qreg_index) # TODO
+        elif type(args[0]) == qiskit.qasm.node.Id:
+            size = self._qregs.get_size(args[0].name)
+            for i in range(size):
+                qubit_index = self._qregs.get_hardware_index(args[0].name, i)
+                # self._engine.reset_qubit(qreg_index) # TODO
+        else:
+            pass # TODO (throw Exception)
 
 
     def _call_universal_unitary(self, args, env):
-        # TODO:
-        # Universal unitary must be able to receive unindexed register
-
         params = args[0].children
+        qreg = args[1]
         if(args[0].size() != 3):
             pass # TODO (throw Exception)
 
@@ -127,29 +96,35 @@ class QASMInterpreter:
         phi = params[1].sym([{}])
         lamda = params[2].sym([{}]) # "lambda" is a reserved keyword
 
-        qreg_index = self._get_qreg_index(args[1].name, args[1].index)
-
-        self._engine.apply(UniversalUnitary(qreg_index, theta, phi, lamda));
+        if type(qreg) == qiskit.qasm.node.IndexedId:
+            qubit_index = self._qregs.get_hardware_index(qreg.name, qreg.index)
+            self._engine.apply(UniversalUnitary(qubit_index, theta, phi, lamda))
+        elif type(qreg) == qiskit.qasm.node.Id:
+            size = self._qregs.get_size(qreg.name)
+            for i in range(size):
+                qubit_index = self._qregs.get_hardware_index(qreg.name, i)
+                self._engine.apply(UniversalUnitary(qubit_index, theta, phi, lamda))
 
 
     def _call_cnot(self, args):
-        if type(args[0]) != qiskit.qasm.node.IndexedId or type(args[1]) != qiskit.qasm.node.IndexedId:
-            pass # TODO (throw Exception)
+        # TODO:
+        # CNOT must be able to receive any combination of indexed/unindexed register
 
-        qreg_index0 = _get_qreg_index(args[0].name, args[0].index)
-        qreg_index1 = _get_qreg_index(args[1].name, args[1].index)
+        qubit_index0 = self._qregs.get_hardware_index(args[0].name, args[0].index)
+        qubit_index1 = self._gregs.get_hardware_index(args[1].name, args[1].index)
 
-        self._engine.apply(CNOT(qreg_index0, qreg_index1))
+        self._engine.apply(CNOT(qubit_index0, qubit_index1))
 
 
     def _call_custom_unitary(self, args):
         pass # TODO
 
 
-class RegisterInfo:
-    def __init__(self, start, size):
-        self.start = start
-        self.size = size
+    def _process_if_statement(self, args):
+        id = args[0].name
+        value = args[1].value
+        if id not in self._cregs:
+            pass # TODO (throw Exception)
 
-    def __repr__(self):
-        return "RegisterInfo(start={}, size={})".format(self.start, self.size)
+        if self._cregs.get_data(id) == value:
+            self._execute_statement(args[2], {})

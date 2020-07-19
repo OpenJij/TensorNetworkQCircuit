@@ -16,6 +16,7 @@ namespace qcircuit {
         py::class_<Proj_1, OneSiteGate>(m, "Proj_1").def(py::init<size_t>());
         py::class_<Proj_0_to_1, OneSiteGate>(m, "Proj_0_to_1").def(py::init<size_t>());
         py::class_<Proj_1_to_0, OneSiteGate>(m, "Proj_1_to_0").def(py::init<size_t>());
+        py::class_<Reset_to_0, OneSiteGate>(m, "Reset_to_0").def(py::init<size_t>());
         py::class_<H, OneSiteGate>(m, "H").def(py::init<size_t>());
         py::class_<UniversalUnitary, OneSiteGate>(m, "UniversalUnitary").def(py::init<size_t, double, double, double>());
 
