@@ -36,6 +36,9 @@ namespace qcircuit {
                                            num_links(0),
                                            neighbors_list(num_bits) {}
 
+        /**
+         * @brief generates a link between `site1` and `site2`.
+         */
         void generateLink(size_t site1, size_t site2) {
             /* Check invalid site index */
             if(site1 >= num_bits || site2 >= num_bits) {
@@ -74,6 +77,17 @@ namespace qcircuit {
             num_links++;
         }
 
+        /**
+         * @brief returns whether a link exists between `site1` and `site2`.
+         */
+        bool hasLinkBetween(size_t site1, size_t site2) const {
+            auto v = this->neighbors_list[site1];
+            auto find_result = std::find_if(v.begin(), v.end(), [&site2] (const Neighbor& x) {
+                                                                    return x.site == site2;
+                                                                });
+            return find_result != v.end();
+        }
+
         size_t numberOfLinks() const {
             return this->num_links;
         }
@@ -98,9 +112,9 @@ namespace qcircuit {
             // back_to[i] points which neighboring site we go back at ith site
             // to reach `origin` in the shortest path.
 
-            // if not necessary to move
-            if((origin.first == destination.first &&  origin.second == destination.second) ||
-               (origin.first == destination.second && origin.second == destination.first)) {
+            // If not necessary to move (at least one of destination is the same as origins)
+            if((origin.first == destination.first ||  origin.first == destination.second) ||
+               (origin.second == destination.first || origin.second == destination.second)) {
                 return std::vector<size_t>();
             }
 
@@ -129,10 +143,8 @@ namespace qcircuit {
             size_t site;
             std::vector<size_t> result;
             if(back_to[destination.first] != NOT_YET_REACHED) {
-                result.push_back(destination.second);
                 site = destination.first;
             } else if(back_to[destination.second] != NOT_YET_REACHED) {
-                result.push_back(destination.first);
                 site = destination.second;
             } else {
                 std::stringstream ss;

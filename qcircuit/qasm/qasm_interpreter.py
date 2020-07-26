@@ -76,14 +76,12 @@ class QASMInterpreter:
     def _reset(self, args):
         if type(args[0]) == qiskit.qasm.node.IndexedId:
             qubit_index = self._qregs.get_hardware_index(args[0].name, args[0].index)
-            # self._engine.reset_qubit(qreg_index) # TODO
-        elif type(args[0]) == qiskit.qasm.node.Id:
+            self._engine.reset_qubit(qreg_index)
+        else:
             size = self._qregs.get_size(args[0].name)
             for i in range(size):
                 qubit_index = self._qregs.get_hardware_index(args[0].name, i)
-                # self._engine.reset_qubit(qreg_index) # TODO
-        else:
-            pass # TODO (throw Exception)
+                self._engine.reset_qubit(qreg_index)
 
 
     def _call_universal_unitary(self, args, env):
@@ -107,13 +105,30 @@ class QASMInterpreter:
 
 
     def _call_cnot(self, args):
-        # TODO:
-        # CNOT must be able to receive any combination of indexed/unindexed register
+        # CNOT must be able to receive any combination of indexed/unindexed registers
 
-        qubit_index0 = self._qregs.get_hardware_index(args[0].name, args[0].index)
-        qubit_index1 = self._gregs.get_hardware_index(args[1].name, args[1].index)
+        if type(args[0]) == qiskit.qasm.node.IndexedId and type(args[1]) == qiskit.qasm.node.IndexedId:
+            qubit_indices0 = [self._qregs.get_hardware_index(args[0].name, args[0].index)]
+            qubit_indices1 = [self._qregs.get_hardware_index(args[1].name, args[1].index)]
+        elif type(args[0]) == qiskit.qasm.node.IndexedId:
+            size = self._qregs.get_size(args[1].name)
+            qubit_indices0 = [self._qregs.get_hardware_index(args[0].name, args[0].index)] * size
+            qubit_indices1 = [self._qregs.get_hardware_index(args[1].name, i) for i in range(size)]
+        elif type(args[1]) == qiskit.qasm.node.IndexedId:
+            size = self._qregs.get_size(args[0].name)
+            qubit_indices0 = [self._qregs.get_hardware_index(args[0].name, i) for i in range(size)]
+            qubit_indices1 = [self._qregs.get_hardware_index(args[1].name, args[1].index)] * size
+        else:
+            size = self._qregs.get_size(args[0].name)
+            if size != self._qregs.get_size(args[1].name):
+                pass # TODO (throw Exception)
 
-        self._engine.apply(CNOT(qubit_index0, qubit_index1))
+            qubit_indices0 = [self._qregs.get_hardware_index(args[0].name, i) for i in range(size)]
+            qubit_indices1 = [self._qregs.get_hardware_index(args[1].name, i) for i in range(size)]
+
+
+        for i0, i1 in zip(qubit_indices0, qubit_indices1):
+            self._engine.apply(CNOT(i0, i1))
 
 
     def _call_custom_unitary(self, args):

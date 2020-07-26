@@ -158,18 +158,6 @@ namespace qcircuit {
     };
 
     /**
-     * @brief Reset state to |0>, i.e. |0><0| + |0><1|
-     */
-    class Reset_to_0 : public OneSiteGate {
-    public:
-        Reset_to_0(size_t site) : OneSiteGate(site) {}
-
-        ITensor op(const std::vector<Index>& slist) const override {
-            return Proj_0(site).op(slist) + Proj_1_to_0(site).op(slist);
-        }
-    };
-
-    /**
      * @brief Hadamard gate.
      */
     class H : public OneSiteGate {

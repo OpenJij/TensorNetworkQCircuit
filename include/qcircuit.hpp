@@ -184,32 +184,36 @@ namespace qcircuit {
             decomposePsi(default_args);
         }
 
-        /** @brief shifts cursor position to specified neighboring site `ind` */
-        Spectrum shiftCursorTo(size_t ind, const Args& args) {
-            assert(ind != cursor.first);
-            assert(ind != cursor.second);
+        /** @brief shifts cursor position to specified neighboring site `dest`.
+         *
+         * `direction` specifies which site of the cursor position to be used as the "head" of move.
+         * `direction == 0` means not specifying the direction.
+         */
+        Spectrum shiftCursorTo(size_t dest, int direction, const Args& args) {
+            assert(dest != cursor.first);
+            assert(dest != cursor.second);
+            assert(direction == 0 || direction == 1 || direction == 2);
 
-            //search ind from list
-            int flag = 0; //0 not found 1 connected with cursor.first  2 connected with cursor.second
-
-            //first
-            for(auto&& i : topology.neighborsOf(cursor.first)) {
-                if(i.site == ind){
-                    flag = 1;
-                    break;
+            if(direction == 0) {
+                //first
+                for(auto&& i : topology.neighborsOf(cursor.first)) {
+                    if(i.site == dest) {
+                        direction = 1;
+                        break;
+                    }
                 }
-            }
-            //second
-            for(auto&& i : topology.neighborsOf(cursor.second)) {
-                if(i.site == ind){
-                    flag = 2;
-                    break;
+                //second
+                for(auto&& i : topology.neighborsOf(cursor.second)) {
+                    if(i.site == dest) {
+                        direction = 2;
+                        break;
+                    }
                 }
             }
 
             Spectrum spec;
 
-            if(flag == 1) {
+            if(direction == 1) {
                 ITensor U,S,V;
 
                 //fetch nodelist in index "second"
@@ -243,11 +247,11 @@ namespace qcircuit {
                 a[link_ind] = commonIndex(S,V);
                 S /= norm(S); //normalize
                 M[cursor.second] = V;
-                Psi = M[ind]*U*S;
+                Psi = M[dest]*U*S;
 
                 cursor.second = cursor.first;
-                cursor.first = ind;
-            } else if(flag == 2) {
+                cursor.first = dest;
+            } else if(direction == 2) {
                 ITensor U,S,V;
 
                 //fetch nodelist in index "first"
@@ -281,19 +285,15 @@ namespace qcircuit {
                 a[link_ind] = commonIndex(U,S);
                 S /= norm(S); //normalize
                 M[cursor.first] = U;
-                Psi = S*V*M[ind];
+                Psi = S*V*M[dest];
 
                 cursor.first = cursor.second;
-                cursor.second = ind;
+                cursor.second = dest;
             } else {
                 assert(false && "cannot move to this direction");
             }
 
             return spec;
-        }
-
-        Spectrum shiftCursorTo(size_t ind) {
-            return shiftCursorTo(ind, default_args);
         }
 
         /** @brief moves cursor along give path.
@@ -304,7 +304,7 @@ namespace qcircuit {
          */
         void moveCursorAlong(const std::vector<size_t>& path, const Args& args) {
             for(auto site : path) {
-                shiftCursorTo(site, args);
+                shiftCursorTo(site, 0, args);
             }
         }
 
@@ -314,9 +314,29 @@ namespace qcircuit {
 
         /** @brief moves cursor to given destination along the shortest path. */
         void moveCursorTo(size_t destination1, size_t destination2, const Args& args) {
-            auto path = topology.getRoute(cursor, std::make_pair(destination1, destination2));
+            if(!topology.hasLinkBetween(destination1, destination2)) {
+                std::stringstream ss;
+                ss << "There is no link between " << destination1 << " and " << destination2;
+                throw QCircuitException(ss.str());
+            }
 
-            moveCursorAlong(path);
+            if( (destination1 == cursor.first || destination1 == cursor.second) &&
+                (destination2 == cursor.first || destination2 == cursor.second) ) {
+                return; // No need to move
+            }
+
+            auto path = topology.getRoute(cursor, std::make_pair(destination1, destination2));
+            moveCursorAlong(path, args);
+
+
+            /* Here, only one of the destination sites is covered by the cursor.
+             * So move the cursor to the remaining destination.
+             */
+            int direction = (cursor.first == destination1 || cursor.first == destination2) ?
+                1 : 2;
+            int dest = (cursor.first == destination1 || cursor.second == destination1) ?
+                destination2 : destination1;
+            shiftCursorTo(dest ,direction, args);
         }
 
         void moveCursorTo(size_t destination1, size_t destination2) {
@@ -344,7 +364,7 @@ namespace qcircuit {
                    const Args& args) {
             moveCursorTo(gate1.site, gate2.site, args);
             auto op = generateTensorOp(gate1) * generateTensorOp(gate2);
-            this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
+            applyAtCursor(op);
         }
 
         void apply(const OneSiteGate& gate1,
@@ -376,7 +396,7 @@ namespace qcircuit {
         void apply(const TwoSiteGate& gate, const Args& args) {
             moveCursorTo(gate.site1, gate.site2, args);
             auto op = generateTensorOp(gate);
-            this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
+            applyAtCursor(op);
         }
 
         void apply(const TwoSiteGate& gate) {
@@ -431,6 +451,23 @@ namespace qcircuit {
 
         int observeQubit(size_t site) {
             return observeQubit(site, default_args);
+        }
+
+        /** @brief reset the qubit state at `site` to |0>. */
+        void resetQubit(size_t site, const Args& args) {
+            auto prob0 = probabilityOfZero(site);
+
+            size_t neighbor = topology.neighborsOf(site)[0].site; // Dummy site to which Id operator is applied.
+            if(prob0 > 0.0) {
+                apply(Proj_0(site), Id(neighbor), args);
+            } else {
+                apply(Proj_1(site), Id(neighbor), args);
+            }
+            this->normalize();
+        }
+
+        void resetQubit(size_t site) {
+            resetQubit(site, default_args);
         }
 
         /** @brief sets cutoff. */
