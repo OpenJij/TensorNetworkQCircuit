@@ -409,26 +409,39 @@ namespace qcircuit {
         }
 
         /**
-          * @brief returns probability the qubit at `site` to be observed as value "0",
-          * i.e. `<psi|Proj_0(i)|psi>` as "Born rule".
+          * @brief returns probability the qubit at `site` to be observed as value `expected` (0 or 1),
+          * i.e. `<psi|Proj_X(i)|psi>` as "Born rule".
           */
-        double probabilityOfZero(size_t site) const {
+        double probabilityOf(size_t site, int expected) const {
+            assert(expected == 0 | expected == 1);
+
             std::vector<ITensor> op;
             op.reserve(this->size());
             for(size_t i = 0;i < this->size();i++) {
                 if(i == site) {
-                    op.push_back(generateTensorOp(Proj_0(i)));
+                    if(expected == 0) {
+                        op.push_back(generateTensorOp(Proj_0(i)));
+                    } else {
+                        op.push_back(generateTensorOp(Proj_1(i)));
+                    }
                 } else {
                     op.push_back(generateTensorOp(Id(i)));
                 }
             }
 
             /*
-             * <psi|Proj_0(i)|psi> = |w_{i,0}|^2 is real by definition,
-             * where w_{i,0} is the coefficient corresponding to the base |....0....>.
+             * <psi|Proj_X(i)|psi> = |w_{i,X}|^2 is real by definition,
+             * where w_{i,X} is the coefficient corresponding to the base |....X....>.
              *                                                     (ith qubit) ^
              */
             return std::real(overlap(*this, op, *this));
+        }
+
+        /**
+          * @brief returns probability the qubit at `site` to be observed as value 0.
+          */
+        double probabilityOfZero(size_t site) const {
+            return probabilityOf(site, 0);
         }
 
         /** @brief observes the qubit state at `site` and returns the projected qubit value (0 or 1). */

@@ -309,3 +309,31 @@ TEST(CALCULATION_TEST, CIRCUIT_WITH_ALL_TO_ALL_CONNECTIVITY) {
     EXPECT_NEAR(1/sqrt(2), abs(overlap(circuit, op, circuit111111)), 1e-3);
     EXPECT_NEAR(1.0 , abs(overlap(circuit, op, circuit)), 1e-3);
 }
+
+
+TEST(CALCULATION_TEST, MULTIPLE_MEASUREMENT_TEST) {
+    using namespace std;
+    using namespace qcircuit;
+
+    const size_t size = 8;
+    const auto topology = make_chain(size);
+
+    QCircuit circuit(topology);
+    circuit.apply(Id(2));
+    circuit.apply(Id(3));
+
+
+    double prob0 = circuit.probabilityOf(2, 0);
+    double prob1 = circuit.probabilityOf(2, 1);
+    std::cout << "weight of |0> at 2: " << prob0 << std::endl;
+    std::cout << "weight of |1> at 2: " << prob1 << std::endl;
+    EXPECT_NEAR(1.0, prob0 + prob1, 1e-3);
+    circuit.observeQubit(2);
+
+    prob0 = circuit.probabilityOf(3, 0);
+    prob1 = circuit.probabilityOf(3, 1);
+    std::cout << "weight of |0> at 3: " << prob0 << std::endl;
+    std::cout << "weight of |1> at 3: " << prob1 << std::endl;
+    EXPECT_NEAR(1.0, prob0 + prob1, 1e-3);
+    circuit.observeQubit(3);
+}
