@@ -232,15 +232,15 @@ namespace qcircuit {
                     newlist.push_back(*it);
                 }
 
-                //set U
+                //set V
                 std::vector<Index> ind_list;
                 ind_list.reserve(newlist.size()+1);
-                ind_list.push_back(s[cursor.first]);
+                ind_list.push_back(s[cursor.second]);
                 for(const auto& elem : newlist){
                     ind_list.push_back(a[elem.link]);
                 }
 
-                U = ITensor(ind_list);
+                V = ITensor(ind_list);
 
                 spec = svd(Psi, U, S, V, args);
 
