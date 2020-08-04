@@ -119,7 +119,6 @@ class QASMInterpreter:
         reg_name = env[qreg.name] # resolve symbol in the current scope
 
         hardstart = self._qregs.get_hardware_index(reg_name, 0)
-        print("called: U({}, {}, {}) {}".format(theta, phi, lamda, hardstart))
 
         if type(qreg) == qiskit.qasm.node.IndexedId:
             qubit_index = self._qregs.get_hardware_index(reg_name, qreg.index)
@@ -165,15 +164,29 @@ class QASMInterpreter:
     def _call_custom_unitary(self, args, env):
         gate_info = self._custom_unitaries[args[0].name]
 
-        ## bind real value arguments and resiters
-        inner_env = {}
-        for var, exp in zip(gate_info[1].children, args[1].children):
-            inner_env[var.name] = qiskit.qasm.node.Real(exp.sym([env]))
+        reg_arg_pos = 2
+        # The position of the register arguments.
+        # This can be changed depending on whether the gate
+        # receives c-number arguments or not.
 
-        for reg_var, reg_name in zip(gate_info[2].children, args[2].children):
+
+        inner_env = {}
+        if len(gate_info) > 3:
+            # If the gate receives some c-number arguments
+
+            for var, exp in zip(gate_info[1].children, args[1].children):
+                inner_env[var.name] = qiskit.qasm.node.Real(exp.sym([env]))
+        else:
+            # If the gate receives no c-number arguments
+            reg_arg_pos = 1
+
+
+            # Gate receives at least one register argument.
+            # (Because if not, what is the gate used for?)
+        for reg_var, reg_name in zip(gate_info[reg_arg_pos].children, args[reg_arg_pos].children):
             inner_env[reg_var.name] = env[reg_name.name]
 
-        for stat in gate_info[3].children:
+        for stat in gate_info[reg_arg_pos+1].children:
             self._execute_statement(stat, inner_env)
 
 
