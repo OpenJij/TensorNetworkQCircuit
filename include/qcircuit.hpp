@@ -293,6 +293,8 @@ namespace qcircuit {
                 assert(false && "cannot move to this direction");
             }
 
+            std::cout << "norm (shift to " << dest << "): " << norm(Psi) << std::endl;
+
             return spec;
         }
 
@@ -351,7 +353,9 @@ namespace qcircuit {
                 assert(elem == s[cursor.first] || elem == s[cursor.second] || elem == prime(s[cursor.first]) || elem == prime(s[cursor.second]));
             }
 
+            std::cout << "norm (before) : " << norm(Psi) << std::endl;
             this->Psi = op * prime(Psi, s[cursor.first], s[cursor.second]);
+            std::cout << "norm (after)  : " << norm(Psi) << std::endl;
         }
 
         /**
