@@ -246,11 +246,15 @@ namespace qcircuit {
 
                 a[link_ind] = commonIndex(S,V);
                 S /= norm(S); //normalize
-                std::cout << "direction 1" << std::endl;
-                std::cout << "V" << std::endl;
-                std::cout << V << std::endl;
+                std::cout << "===== move direction 1 (move left) =====" << std::endl;
+                std::cout << "U" << std::endl;
+                std::cout << U << std::endl;
                 std::cout << "S" << std::endl;
                 std::cout << S << std::endl;
+                std::cout << "V" << std::endl;
+                std::cout << V << std::endl;
+                std::cout << "M[dest]" << std::endl;
+                std::cout << M[dest] << std::endl;
                 M[cursor.second] = V;
                 Psi = M[dest]*U*S;
 
@@ -289,11 +293,15 @@ namespace qcircuit {
 
                 a[link_ind] = commonIndex(U,S);
                 S /= norm(S); //normalize
-                std::cout << "direction 2" << std::endl;
+                std::cout << "===== move direction 2 (move right) =====" << std::endl;
                 std::cout << "U" << std::endl;
                 std::cout << U << std::endl;
                 std::cout << "S" << std::endl;
                 std::cout << S << std::endl;
+                std::cout << "V" << std::endl;
+                std::cout << V << std::endl;
+                std::cout << "M[dest]" << std::endl;
+                std::cout << M[dest] << std::endl;
                 M[cursor.first] = U;
                 Psi = S*V*M[dest];
 
@@ -303,8 +311,11 @@ namespace qcircuit {
                 assert(false && "cannot move to this direction");
             }
 
+            Psi /= norm(Psi);
             std::cout << "norm (shift to " << dest << "): " << norm(Psi) << std::endl;
+            std::cout << "Psi" << std::endl;
             std::cout << Psi << std::endl;
+            std::cout << "=========================================" << std::endl;
 
 
             return spec;

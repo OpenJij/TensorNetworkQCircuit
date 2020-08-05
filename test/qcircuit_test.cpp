@@ -108,6 +108,8 @@ TEST(CALCULATION_TEST, LOOP_TEST) {
     circuit.apply(H(0), H(1));
     circuit.apply(H(2), Id(1));
 
+    std::cout << "+++++++++++++ end cursor move +++++++++++++" << std::endl;
+
     QCircuit circuit000(topology, init_qbits, circuit.site());
     circuit000.setCutoff(1e-5);
 
