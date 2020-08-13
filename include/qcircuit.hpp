@@ -26,10 +26,10 @@ namespace qcircuit {
      */
     class QCircuit {
     private:
-        std::vector<Index> a;   //!< @brief Link (bond) indices.
-        std::vector<Index> s;   //!< @brief Physical (on-site) indices.
-        std::vector<ITensor> M; //!< @brief Tensor entities.
-        ITensor Psi;            //!< @brief TPS wave function.
+        std::vector<Index> s;     //!< @brief Physical (on-site) indices.
+        std::vector<ITensor> M;   //!< @brief Tensor entities.
+        std::vector<ITensor> SV;  //!< @brief Singular value entities.
+        ITensor Psi;  //!< @brief TPS wave function
 
         const CircuitTopology topology; //!< @brief Circuit topology.
 
@@ -54,16 +54,22 @@ namespace qcircuit {
         QCircuit(const CircuitTopology& topology,
                  const std::vector<std::pair<std::complex<double>, std::complex<double>>>& init_qubits,
                  const std::vector<Index>& physical_indices = std::vector<Index>()) :
-            a(), s(physical_indices), topology(topology), random_engine(std::random_device()()) {
+            s(physical_indices), topology(topology), random_engine(std::random_device()()) {
 
             if(!topology.isConnectedGraph()) {
                 throw QCircuitException("Invalid circuit topology : Some nodes are unreachable");
             }
 
             /* Initialize link indices */
+            std::vector<std::pair<Index, Index>> a;
             a.reserve(topology.numberOfLinks());
+            SV.reserve(topology.numberOfLinks());
             for(size_t i = 0; i < topology.numberOfLinks();i++) {
-                a.emplace_back(1, "LinkInd");
+                auto index1 = Index(1, "LinkInd");
+                auto index2 = Index(1, "LinkInd");
+                a.emplace_back(index1, index2);
+                SV.emplace_back(index1, index2);
+                SV.back().set(index1=1, index2=1, 1.0);
             }
 
             /* Initialize physical indices */
@@ -87,13 +93,21 @@ namespace qcircuit {
                 //fill ind_list
                 ind_list.push_back(s[i]);
                 for(const auto& neighbor : neighbors){
-                    ind_list.push_back(a[neighbor.link]);
+                    if(i < neighbor.site) {
+                        ind_list.push_back(a[neighbor.link].first);
+                    } else {
+                        ind_list.push_back(a[neighbor.link].second);
+                    }
                 }
 
                 //fill ind_val_list
                 ind_val_list.push_back(s[i](1));
                 for(const auto& neighbor : neighbors){
-                    ind_val_list.push_back(a[neighbor.link](1));
+                    if(i < neighbor.site) {
+                        ind_val_list.push_back((a[neighbor.link].first)(1));
+                    } else {
+                        ind_val_list.push_back((a[neighbor.link].second)(1));
+                    }
                 }
 
                 //insert into M
@@ -105,20 +119,18 @@ namespace qcircuit {
             }
 
             /* set cursor position */
-            {
-                cursor.first = 0;
+            cursor.first = 0;
 
-                /* find the minimum numbered bit of neighbors of the bit 0. */
-                size_t index = this->size();
-                for(const auto& neighbor : topology.neighborsOf(cursor.first)) {
-                    if(neighbor.site < index) {
-                        index = neighbor.site;
-                    }
+            /* find the minimum numbered bit of neighbors of the bit 0. */
+            size_t cursor_second_index = this->size();
+            for(const auto& neighbor : topology.neighborsOf(cursor.first)) {
+                if(neighbor.site < cursor_second_index) {
+                    cursor_second_index = neighbor.site;
                 }
-                cursor.second = index;
             }
+            cursor.second = cursor_second_index;
 
-            Psi = M[cursor.first]*M[cursor.second];
+            updatePsi();
         }
 
         /** @brief Constructor to initialize TPS wave function with |000 ... 000>.
@@ -142,46 +154,130 @@ namespace qcircuit {
             return this->topology.numberOfBits();
         }
 
-        /** @brief decompose and truncate the system wave-function at cursor position.  */
-        void decomposePsi(const Args& args) {
-            ITensor U,S,V;
+        /** @brief update `Psi` (canonical center) with current cursor position */
+        void updatePsi() {
+            size_t link_index = topology.getLinkIdBetween(cursor.first, cursor.second);
 
-            // fetch nodelist in index "first"
-            auto list = topology.neighborsOf(cursor.first);
+            Psi = M[cursor.first]*SV[link_index]*M[cursor.second];
 
-            /* get link index corresponding to cursor position
-             * (this can be combined with the std::remove_if below)
-             */
-            auto second_itr = std::find_if(list.begin(), list.end(),
-                                              [&](auto x) {return x.site == cursor.second;});
-            auto link_ind = (*second_itr).link;
-
-            // remove the element which connects to node second
-            auto pend = std::remove_if(list.begin(), list.end(), [&](const auto& t){return t.site == cursor.second;});
-            std::vector<CircuitTopology::Neighbor> newlist;
-            for(auto it = list.begin(); it != pend; ++it){
-                newlist.push_back(*it);
+            // add singular-value matrices at egdes
+            for(auto&& neighbor : topology.neighborsOf(cursor.first)) {
+                if(neighbor.link != link_index) {
+                    Psi = Psi*SV[neighbor.link];
+                }
             }
-
-            // set U
-            std::vector<Index> ind_list;
-            ind_list.reserve(newlist.size()+1);
-            ind_list.push_back(s[cursor.first]);
-            for(const auto& elem : newlist){
-                ind_list.push_back(a[elem.link]);
+            for(auto&& neighbor : topology.neighborsOf(cursor.second)) {
+                if(neighbor.link != link_index) {
+                    Psi = Psi*SV[neighbor.link];
+                }
             }
-
-            U = ITensor(ind_list);
-
-            Spectrum spec = svd(Psi, U, S, V, args);
-            a[link_ind] = commonIndex(U,S);
-            S /= norm(S); //normalize
-            M[cursor.first] = U;
-            M[cursor.second] = S*V;
         }
 
-        void decomposePsi() {
-            decomposePsi(default_args);
+        /** @brief decomposes wave-function at cursor position and truncates bonds.
+         *
+         * Decomposition is achieved with the following way.
+         * Below, symbols "o" means site tensors
+         * and symbols "*" means singular-value tensors.
+         *
+         * 1. Decompose Psi:
+         @verbatim
+                          Psi
+                +---------------------+                     U   S   V
+            ----|--*---o---*---o---*--|----  =>  -----------o---*---o-----------
+                +---------------------+
+         @endverbatim
+         * 2. Since Psi includes singular-value tensors at each edge,
+         *    U and V must be reconstructed NOT to include them.
+         *    To factor out them, first, insert singular-value tensors and their inverses (marked as #):
+         @verbatim
+                       U   S   V                            U   S   V
+            -----------o---*---o----------   =>  ---*---#---o---*---o---#---*---
+         @endverbatim
+         * 3. Then, regard the part "--#--o--" as U (and also V):
+         @verbatim
+                       U   S   V                                S
+            ---*---#---o---*---o---#---*---  =>  ---*-----o-----*-----o-----*---
+                  ^^^^^^^     ^^^^^^^                     U           V
+                   new U       new V
+         @endverbatim
+         *
+         */
+        Spectrum decomposePsi(const Args& args) {
+            const double SINGULAR_VALUE_THRESHOLD = 1e-16;
+            // Very small singular values could cause numerical instability
+            // when calculating inverse of them.
+            // This value is used as the threshold to discard such small singular values.
+
+            /* Prepare indices to be free ones of U */
+            auto link_index = topology.getLinkIdBetween(cursor.first, cursor.second);
+
+            std::vector<Index> outer_indices_U;
+            outer_indices_U.push_back(s[cursor.first]);
+            for(auto&& neighbor : topology.neighborsOf(cursor.first)) {
+                if(neighbor.link != link_index) {
+                    outer_indices_U.push_back(commonIndex(Psi, SV[neighbor.link]));
+                }
+            }
+
+            ITensor U, S, V;
+            U = ITensor(outer_indices_U);
+
+            Spectrum spec = svd(Psi, U, S, V, args);
+
+            S /= norm(S); // normalization
+
+            /* Reconstruct U */
+            for(auto&& neighbor : topology.neighborsOf(cursor.first)) {
+                if(neighbor.link != link_index) {
+                    Index index_i = uniqueIndex(SV[neighbor.link], U);
+                    Index index_j = commonIndex(U, SV[neighbor.link]); // to be contracted
+
+                    ITensor inv(prime(index_j), index_i);
+                    for(auto i : range1(std::min(dim(index_i), dim(index_j)))) {
+                        // Singular-value matrix has only diagonal elements, so just invert them
+
+                        auto x = SV[neighbor.link].real(index_i=i, index_j=i);
+                        if(x < SINGULAR_VALUE_THRESHOLD) {
+                            break; // SVs are in descending order, so discard remaining ones
+                        }
+                        inv.set(prime(index_j)=i, index_i=i, 1.0/x);
+                    }
+                    U.prime(index_j);
+                    U = U*inv;
+                }
+            }
+
+            /* Reconstruct V */
+            for(auto&& neighbor : topology.neighborsOf(cursor.second)) {
+                if(neighbor.link != link_index) {
+                    Index index_i = uniqueIndex(SV[neighbor.link], V);
+                    Index index_j = commonIndex(V, SV[neighbor.link]); // to be contracted
+
+                    ITensor inv(prime(index_j), index_i);
+                    for(auto i : range1(std::min(dim(index_i), dim(index_j)))) {
+                        // Singular-value matrix has only diagonal elements, so just invert them
+
+                        auto x = SV[neighbor.link].real(index_i=i, index_j=i);
+                        if(x < SINGULAR_VALUE_THRESHOLD) {
+                            break; // SVs are in descending order, so discard remaining ones
+                        }
+                        inv.set(prime(index_j)=i, index_i=i, 1.0/x);
+
+                    }
+                    V.prime(index_j);
+                    V = V*inv;
+                }
+            }
+
+            SV[link_index] = S;
+            M[cursor.first] = U;
+            M[cursor.second] = V;
+
+            return spec;
+        }
+
+        Spectrum decomposePsi() {
+            return decomposePsi(default_args);
         }
 
         /** @brief shifts cursor position to specified neighboring site `dest`.
@@ -190,108 +286,50 @@ namespace qcircuit {
          * `direction == 0` means not specifying the direction.
          */
         Spectrum shiftCursorTo(size_t dest, int direction, const Args& args) {
+            const static int AUTO_HEAD = 0;
+            const static int FIRST_AS_HEAD = 1;
+            const static int SECOND_AS_HEAD = 2;
+
             assert(dest != cursor.first);
             assert(dest != cursor.second);
-            assert(direction == 0 || direction == 1 || direction == 2);
+            assert(direction == AUTO_HEAD || direction == FIRST_AS_HEAD || direction == SECOND_AS_HEAD);
 
-            if(direction == 0) {
+            if(direction == AUTO_HEAD) {
                 //first
                 for(auto&& i : topology.neighborsOf(cursor.first)) {
                     if(i.site == dest) {
-                        direction = 1;
+                        direction = FIRST_AS_HEAD;
                         break;
                     }
                 }
                 //second
                 for(auto&& i : topology.neighborsOf(cursor.second)) {
                     if(i.site == dest) {
-                        direction = 2;
+                        direction = SECOND_AS_HEAD;
                         break;
                     }
                 }
             }
 
-            Spectrum spec;
 
-            if(direction == 1) {
-                ITensor U,S,V;
+            Spectrum spec = decomposePsi();
 
-                //fetch nodelist in index "second"
-                auto list = this->topology.neighborsOf(cursor.second);
-                //get link index
-                size_t link_ind = 0;
-                for(auto&& i : list){
-                    if(i.site == cursor.first){
-                        link_ind = i.link;
-                    }
-                }
-                //remove the element which connects to node first
-                auto pend = std::remove_if(list.begin(), list.end(), [&](const auto& t){return t.site == cursor.first;});
-                std::vector<CircuitTopology::Neighbor> newlist;
-                for(auto it = list.begin(); it != pend; ++it){
-                    newlist.push_back(*it);
-                }
 
-                //set V
-                std::vector<Index> ind_list;
-                ind_list.reserve(newlist.size()+1);
-                ind_list.push_back(s[cursor.second]);
-                for(const auto& elem : newlist){
-                    ind_list.push_back(a[elem.link]);
-                }
-
-                V = ITensor(ind_list);
-
-                spec = svd(Psi, U, S, V, args);
-
-                a[link_ind] = commonIndex(S,V);
-                S /= norm(S); //normalize
-                M[cursor.second] = V;
-                Psi = M[dest]*U*S;
-
+            switch(direction) {
+            case FIRST_AS_HEAD:
                 cursor.second = cursor.first;
                 cursor.first = dest;
-            } else if(direction == 2) {
-                ITensor U,S,V;
-
-                //fetch nodelist in index "first"
-                auto list = topology.neighborsOf(cursor.first);
-                //get link index
-                size_t link_ind = 0;
-                for(auto&& i : list) {
-                    if(i.site == cursor.second){
-                        link_ind = i.link;
-                    }
-                }
-                //remove the element which connects to node second
-                auto pend = std::remove_if(list.begin(), list.end(), [&](const auto& t){return t.site == cursor.second;});
-                std::vector<CircuitTopology::Neighbor> newlist;
-                for(auto it = list.begin(); it != pend; ++it){
-                    newlist.push_back(*it);
-                }
-
-                //set U
-                std::vector<Index> ind_list;
-                ind_list.reserve(newlist.size()+1);
-                ind_list.push_back(s[cursor.first]);
-                for(const auto& elem : newlist){
-                    ind_list.push_back(a[elem.link]);
-                }
-
-                U = ITensor(ind_list);
-
-                spec = svd(Psi, U, S, V, args);
-
-                a[link_ind] = commonIndex(U,S);
-                S /= norm(S); //normalize
-                M[cursor.first] = U;
-                Psi = S*V*M[dest];
-
+                break;
+            case SECOND_AS_HEAD:
                 cursor.first = cursor.second;
                 cursor.second = dest;
-            } else {
+                break;
+            default:
                 assert(false && "cannot move to this direction");
+                break;
             }
+
+            updatePsi();
 
             return spec;
         }
@@ -525,15 +563,19 @@ namespace qcircuit {
                 elem = prime(elem);
             }
 
-            for(auto& elem : this->a){
-                elem = prime(elem);
-            }
-
             for(auto& elem : this->M){
                 elem = prime(elem);
             }
 
+            for(auto& elem : this->SV){
+                elem = prime(elem);
+            }
+
             Psi = prime(Psi);
+        }
+
+        const CircuitTopology& getTopology() const {
+            return this->topology;
         }
 
         const ITensor& Mref(size_t i) const {
@@ -543,6 +585,11 @@ namespace qcircuit {
 
         const std::vector<ITensor>& Mref() const {
             return this->M;
+        }
+
+        const ITensor& SVref(size_t i) const {
+            assert(0 <= i && i < this->topology.numberOfLinks());
+            return this->SV[i];
         }
 
         const ITensor& Psiref() const {
@@ -575,22 +622,29 @@ namespace qcircuit {
         }
     };
 
+    /* Prototype declaration of this function is placed at the top. */
     inline Cplx overlap(QCircuit circuit1,
                         const std::vector<ITensor>& op,
                         QCircuit circuit2,
                         const Args& args) {
-        /* Prototype declaration of this function is placed at the top. */
         assert(op.size() == circuit1.size() && op.size() == circuit2.size());
+
+        auto topology = circuit1.getTopology();
 
         circuit1.decomposePsi(args);
         circuit2.decomposePsi(args);
 
         circuit2.primeAll();
 
-        ITensor ret_t = dag(circuit1.Mref(0))*op[0]*circuit2.Mref(0);
-        for(size_t i = 1; i < circuit1.size(); i++) {
+        ITensor ret_t(1.0); // Rank zero tensor with amplitude 1.0
+        for(size_t i = 0; i < circuit1.size(); i++) {
             //reduction
             ret_t = dag(circuit1.Mref(i))*op[i]*ret_t*circuit2.Mref(i);
+            for(auto&& neighbor : topology.neighborsOf(i)) {
+                if(i < neighbor.site) {
+                    ret_t = dag(circuit1.SVref(neighbor.link))*ret_t*circuit2.SVref(neighbor.link);
+                }
+            }
         }
 
         return ret_t.cplx();

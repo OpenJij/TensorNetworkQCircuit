@@ -30,7 +30,6 @@ namespace qcircuit {
         size_t num_links; //!< @brief Number of links
         std::vector<std::vector<Neighbor>> neighbors_list; //!< @brief List of neighboring sites of each site.
 
-
     public:
         CircuitTopology(size_t num_bits) : num_bits(num_bits),
                                            num_links(0),
@@ -86,6 +85,23 @@ namespace qcircuit {
                                                                     return x.site == site2;
                                                                 });
             return find_result != v.end();
+        }
+
+        /**
+         * @brief returns a link ID between `site1` and `site2`.
+         */
+        size_t getLinkIdBetween(size_t site1, size_t site2) const {
+            auto v = this->neighbors_list[site1];
+            auto find_result = std::find_if(v.begin(), v.end(), [&site2] (const Neighbor& x) {
+                                                                    return x.site == site2;
+                                                                });
+            if(find_result == v.end()) {
+                std::stringstream ss;
+                ss << "There is no link between (" << site1 << ", " << site2 << ")";
+                throw QCircuitException(ss.str());
+            }
+
+            return (*find_result).link;
         }
 
         size_t numberOfLinks() const {
