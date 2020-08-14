@@ -109,14 +109,16 @@ from qcircuit.qasm import *
 data = """
 OPENQASM 2.0;
 
+include "qelib1.inc";
+
 creg c[2];
 qreg q[2];
-U(pi, 0, pi) q[0];
+x q[0];
 measure q[0] -> c[0];
 """
 
 engine = QASMInterpreter(data)
 engine.execute()
 
-print(engine._creg)
+print("{:02b}".format(engine._cregs.get_data("c")))
 ```
