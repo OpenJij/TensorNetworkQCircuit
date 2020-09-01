@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
+#include <cassert>
 #include "qcircuit_exception.hpp"
 
 namespace qcircuit {
@@ -176,6 +177,60 @@ namespace qcircuit {
             std::reverse(result.begin(), result.end());
             return result;
         }
+
+
+        /**
+         * @brief Find the shortest swapping path to move `target` to
+         * one neighboring site of `origin`
+         *
+         * Breadth First Search algorithm is used. Returned vector contains `target`
+         * and does not contain `origin`.
+         * If `target` is already a neighbor of `origin`, returned vector contains only `target`.
+         *
+         * @note The implementation of this function is quite similar to `getRoute()` so
+         * this function could be combined with it.
+         */
+        std::vector<size_t> getSwapPath(size_t origin, size_t target) const {
+            static const int NOT_YET_REACHED = -1;
+            std::vector<int> back_to(num_bits, NOT_YET_REACHED);
+            // back_to[i] points which neighboring site we go back at ith site
+            // to reach one neighbor of `destination` in the shortest path.
+
+            if(origin == target) {
+                assert(false && "Unintended call (unnecessary to swap)");
+            }
+
+            std::queue<size_t> queue;
+            queue.push(origin);
+            back_to[origin] = origin;
+
+            while(!queue.empty()) {
+                auto site = queue.front();
+                queue.pop(); // pop() returns nothing.
+
+                if(site == target) {
+                    break;
+                }
+
+                for(auto neighbor : neighbors_list[site]) {
+                    if(back_to[neighbor.site] == NOT_YET_REACHED) {
+                        back_to[neighbor.site] = site;
+                        queue.push(neighbor.site);
+                    }
+                }
+            }
+
+            size_t site = target;
+            std::vector<size_t> result;
+
+            while(site != origin) {
+                result.push_back(site);
+                site = back_to[site];
+            }
+
+            return result;
+        }
+
 
         /**
          * @brief returns true if the circuit is a connected graph,

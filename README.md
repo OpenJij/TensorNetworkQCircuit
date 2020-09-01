@@ -79,6 +79,9 @@ int main(int argc, char const* argv[]) {
 
 ## Python example
 At the root directory, `pip install .` is available.
+If you want to update existing one, `--no-cache-dir` option may be
+required to avoid using old cache.
+
 If your own ITensor is in a different place from `external/itensor`,
 specify the location by editting `setup.py`.
 

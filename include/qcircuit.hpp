@@ -521,6 +521,16 @@ namespace qcircuit {
             resetQubit(site, default_args);
         }
 
+        /**
+         * @brief Find the shortest swapping path to move `target` to
+         * one neighboring site of `origin`.
+         *
+         * This function is a delegation to `topology` object.
+         */
+        std::vector<size_t> getSwapPath(size_t origin, size_t target) const {
+            return topology.getSwapPath(origin, target);
+        }
+
         /** @brief sets cutoff. */
         QCircuit& setCutoff(double cutoff) {
             default_args.add("Cutoff", cutoff);

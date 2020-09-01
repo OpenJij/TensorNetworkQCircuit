@@ -6,9 +6,8 @@ from .exception import QASMError
 
 
 class QASMInterpreter:
-    def __init__(self, data):
+    def __init__(self, data, topology = make_chain(50)):
         self._data = data
-        topology = make_ibmq_topology()
         self._engine = QCircuit(topology)
         self._max_qubit = topology.number_of_bits()
         self._qregs = QuantumRegisters(self._max_qubit)
@@ -54,14 +53,12 @@ class QASMInterpreter:
         name = args[0].name
         size = args[0].index
         self._qregs.add(name, size)
-        self._global_env[name] = name
 
 
     def _add_classical_register(self, args):
         name = args[0].name
         size = args[0].index
         self._cregs.add(name, size)
-        self._global_env[name] = name
 
 
     def _define_gate(self, args):
@@ -106,7 +103,6 @@ class QASMInterpreter:
 
     def _call_universal_unitary(self, args, env):
         params = args[0].children
-        qreg = args[1]
         num_args = args[0].size()
         if num_args != 3:
             how = 'few' if num_args < 3 else 'many'
@@ -116,49 +112,62 @@ class QASMInterpreter:
         phi = params[1].sym([env])
         lamda = params[2].sym([env]) # "lambda" is a reserved keyword
 
-        reg_name = env[qreg.name] # resolve symbol in the current scope
-
-        hardstart = self._qregs.get_hardware_index(reg_name, 0)
+        if not env:
+            qreg = args[1]
+        else:
+            qreg = env[args[1].name] # resolve symbol in the current scope
 
         if type(qreg) == qiskit.qasm.node.IndexedId:
-            qubit_index = self._qregs.get_hardware_index(reg_name, qreg.index)
+            qubit_index = self._qregs.get_hardware_index(qreg.name, qreg.index)
             self._engine.apply(UniversalUnitary(qubit_index, theta, phi, lamda))
         elif type(qreg) == qiskit.qasm.node.Id:
-            size = self._qregs.get_size(reg_name)
+            size = self._qregs.get_size(qreg.name)
             for i in range(size):
-                qubit_index = self._qregs.get_hardware_index(reg_name, i)
+                qubit_index = self._qregs.get_hardware_index(qreg.name, i)
                 self._engine.apply(UniversalUnitary(qubit_index, theta, phi, lamda))
 
 
     def _call_cnot(self, args, env):
         # CNOT must be able to receive any combination of indexed/unindexed registers
 
-        reg_name0 = env[args[0].name] # resolve symbol in the current scope
-        reg_name1 = env[args[1].name] # resolve symbol in the current scope
-
-        if type(args[0]) == qiskit.qasm.node.IndexedId and type(args[1]) == qiskit.qasm.node.IndexedId:
-            qubit_indices0 = [self._qregs.get_hardware_index(reg_name0, args[0].index)]
-            qubit_indices1 = [self._qregs.get_hardware_index(reg_name1, args[1].index)]
-        elif type(args[0]) == qiskit.qasm.node.IndexedId:
-            size = self._qregs.get_size(reg_name1)
-            qubit_indices0 = [self._qregs.get_hardware_index(reg_name0, args[0].index)] * size
-            qubit_indices1 = [self._qregs.get_hardware_index(reg_name1, i) for i in range(size)]
-        elif type(args[1]) == qiskit.qasm.node.IndexedId:
-            size = self._qregs.get_size(reg_name0)
-            qubit_indices0 = [self._qregs.get_hardware_index(reg_name0, i) for i in range(size)]
-            qubit_indices1 = [self._qregs.get_hardware_index(reg_name1, args[1].index)] * size
+        if not env:
+            qreg0 = args[0]
+            qreg1 = args[1]
         else:
-            size = self._qregs.get_size(reg_name0)
-            if size != self._qregs.get_size(reg_name1):
-                message = 'Unmatching register size ({} and {})'.format(reg_name0, reg_name1)
+            qreg0 = env[args[0].name] # resolve symbol in the current scope
+            qreg1 = env[args[1].name] # resolve symbol in the current scope
+
+        if type(qreg0) == qiskit.qasm.node.IndexedId and type(qreg1) == qiskit.qasm.node.IndexedId:
+            qubit_v_indices0 = [self._qregs.get_virtual_index(qreg0.name, qreg0.index)]
+            qubit_v_indices1 = [self._qregs.get_virtual_index(qreg1.name, qreg1.index)]
+        elif type(qreg0) == qiskit.qasm.node.IndexedId:
+            size = self._qregs.get_size(qreg1.name)
+            qubit_v_indices0 = [self._qregs.get_virtual_index(qreg0.name, qreg0.index)] * size
+            qubit_v_indices1 = [self._qregs.get_virtual_index(qreg1.name, i) for i in range(size)]
+        elif type(qreg1) == qiskit.qasm.node.IndexedId:
+            size = self._qregs.get_size(qreg0.name)
+            qubit_v_indices0 = [self._qregs.get_virtual_index(qreg0.name, i) for i in range(size)]
+            qubit_v_indices1 = [self._qregs.get_virtual_index(qreg1.name, qreg1.index)] * size
+        else:
+            size = self._qregs.get_size(qreg0.name)
+            if size != self._qregs.get_size(qreg1.name):
+                message = 'Unmatching register size ({} and {})'.format(qreg0.name, qreg1.name)
                 raise QASMError('CX', message)
 
-            qubit_indices0 = [self._qregs.get_hardware_index(reg_name0, i) for i in range(size)]
-            qubit_indices1 = [self._qregs.get_hardware_index(reg_name1, i) for i in range(size)]
+            qubit_v_indices0 = [self._qregs.get_virtual_index(qreg0.name, i) for i in range(size)]
+            qubit_v_indices1 = [self._qregs.get_virtual_index(qreg1.name, i) for i in range(size)]
 
 
-        for i0, i1 in zip(qubit_indices0, qubit_indices1):
-            self._engine.apply(CNOT(i0, i1))
+        for vi0, vi1 in zip(qubit_v_indices0, qubit_v_indices1):
+            hi0 = self._qregs.convert_to_hardware_index(vi0)
+            hi1 = self._qregs.convert_to_hardware_index(vi1)
+
+            self._move_qubit_to_neighbor(hi0, hi1)
+
+            new_hi0 = self._qregs.convert_to_hardware_index(vi0)
+            new_hi1 = self._qregs.convert_to_hardware_index(vi1)
+
+            self._engine.apply(CNOT(new_hi0, new_hi1))
 
 
     def _call_custom_unitary(self, args, env):
@@ -183,8 +192,12 @@ class QASMInterpreter:
 
             # Gate receives at least one register argument.
             # (Because if not, what is the gate used for?)
-        for reg_var, reg_name in zip(gate_info[reg_arg_pos].children, args[reg_arg_pos].children):
-            inner_env[reg_var.name] = env[reg_name.name]
+
+        for reg_var, reg_id in zip(gate_info[reg_arg_pos].children, args[reg_arg_pos].children):
+            if not env:
+                inner_env[reg_var.name] = reg_id
+            else:
+                inner_env[reg_var.name] = env[reg_id.name]
 
         for stat in gate_info[reg_arg_pos+1].children:
             self._execute_statement(stat, inner_env)
@@ -198,3 +211,12 @@ class QASMInterpreter:
 
         if self._cregs.get_data(id) == value:
             self._execute_statement(args[2], env)
+
+
+    def _move_qubit_to_neighbor(self, hardware_origin, hardware_target):
+        swap_list = self._engine.get_swap_path(hardware_origin, hardware_target)
+
+        for i in range(len(swap_list)-1):
+            self._engine.apply(Swap(swap_list[i], swap_list[i+1]))
+
+        self._qregs.update_qubit_position(swap_list)
