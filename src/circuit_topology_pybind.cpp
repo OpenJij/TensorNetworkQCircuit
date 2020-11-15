@@ -10,8 +10,7 @@ namespace qcircuit {
             .def("generate_link", &CircuitTopology::generateLink)
             .def("number_of_bits", &CircuitTopology::numberOfBits)
             .def("number_of_links", &CircuitTopology::numberOfLinks)
-            .def("export_dot_string", &CircuitTopology::exportDotString,
-                 py::arg("filename"),
+            .def("convert_to_dot_string", &CircuitTopology::convertToDotString,
                  py::arg("layout") = "neato",
                  py::arg("shape") = "circle");
     }

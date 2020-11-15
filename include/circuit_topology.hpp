@@ -7,7 +7,6 @@
 #include <utility>
 #include <queue>
 #include <algorithm>
-#include <fstream>
 #include <sstream>
 #include <cassert>
 #include "qcircuit_exception.hpp"
@@ -262,16 +261,18 @@ namespace qcircuit {
         }
 
         /**
-         * @brief Exports graph topology as DOT language (Graphviz style) to given file.
+         * @brief Returns  DOT language (Graphviz style) string representing the graph topology.
          *
          * To generate PDF file from exported DOT file, run the following:  
          * `dot -Tpdf <name>.dot -o <name>.pdf`
          */
-        void exportDotString(const std::string& filename,
-                             const std::string& layout = "neato",
+        std::string convertToDotString(const std::string& layout = "neato",
                              const std::string& shape = "circle") const {
-            std::ofstream stream(filename);
+            std::stringstream stream;
 
+            stream << "// Convert to pdf:" << std::endl;
+            stream << "// dot -Tpdf <name>.dot -o <name>.pdf" << std::endl;
+            stream << std::endl;
             stream << "graph {" << std::endl;
             stream << "    graph[layout=" << layout << "]" << std::endl;
             stream << "    node[shape=" << shape << "]" << std::endl << std::endl;
@@ -283,6 +284,8 @@ namespace qcircuit {
                 }
             }
             stream << "}" << std::endl;
+
+            return stream.str();
         }
     };
 } // namespace qcircuit
