@@ -1,0 +1,4 @@
+/external/
+/build/
+__pycache__/
+.vim.custom

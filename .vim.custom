@@ -1,6 +1,0 @@
-set path+=/mnt/ssd/workspace/linux/workspace/c_c++/ITensor/itensor,.
-let c_dir=getcwd()
-set path+=c_dir
-set path+=/mnt/ssd/workspace/linux/workspace/c_c++/lab/nlab_loschmidt/extsrc/googletest/googletest/include"
-let g:clang_cpp_options ='-std=c++11 -stdlib=libc++ -I'.c_dir.' -I'.c_dir.'/extsrc/googletest/googletest/include'
-let g:clang_c_options ='-std=c11 -stdlib=libc++ -I'.c_dir.' -I'.c_dir.'/extsrc/googletest/googletest/include'

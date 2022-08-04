@@ -1,24 +1,5 @@
-# README for developers
+//Copyright (c) 2019 Jij Inc.
 
-## Dependencies
-[ITensor](https://itensor.org/) v3 and [pybind11](https://github.com/pybind/pybind11)
-are required.
-
-Directory structure which is not contained in Git repository
-is currently as follows:
-```
-.
-├── build (Working directory for CMake out-of-source build)
-├── html (Doxygen output)
-├── external
-    ├── itensor
-    └── pybind11
-```
-
-
-## C++ Example
-
-```c++
 #include <itensor/all.h>
 #include <itensor/util/print_macro.h>
 #include <vector>
@@ -75,53 +56,3 @@ int main(int argc, char const* argv[]) {
 
     return 0;
 }
-```
-
-## Python example
-At the root directory, `pip install .` is available.
-If you want to update existing one, `--no-cache-dir` option may be
-required to avoid using old cache.
-
-If your own ITensor is in a different place from `external/itensor`,
-specify the location by editting `setup.py`.
-
-### Python interface
-```python
-from qcircuit.core import *
-
-
-topology = make_ibmq_topology()
-circuit = QCircuit(topology)
-circuit.cutoff = 1e-5
-
-circuit.apply(H(0))
-prob0 = circuit.probability_of_zero(0)
-print("Probability to observe |0>: {:.3f}".format(prob0)) # should be 1/2
-
-bit = circuit.observe_qubit(0)  # projection
-print("Qubit 0 is observed as |{}>".format(bit))
-```
-
-### QASM interface
-Currently under development.
-
-```python
-from qcircuit.qasm import *
-
-
-data = """
-OPENQASM 2.0;
-
-include "qelib1.inc";
-
-creg c[2];
-qreg q[2];
-x q[0];
-measure q[0] -> c[0];
-"""
-
-engine = QASMInterpreter(data)
-engine.execute()
-
-print("{:02b}".format(engine._cregs.get_data("c")))
-```
