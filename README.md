@@ -24,7 +24,8 @@ cd external
 git clone https://github.com/ITensor/ITensor itensor
 cd itensor
 # configure `options.mk` and `make` following the ITensor install document https://github.com/ITensor/ITensor/blob/v3/INSTALL.md
-cd ..
+# return to the root directory
+cd ../..
 # Install on your virtual environment
 pip install .
 # or create wheel package
