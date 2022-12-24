@@ -1,4 +1,1 @@
-try:
-    from ._core import *
-except ImportError:
-    pass
+from ._core import *
