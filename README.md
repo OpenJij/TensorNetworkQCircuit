@@ -18,7 +18,7 @@ is currently as follows:
 ## Install
 
 ### From GitHub
-```
+```sh
 mkdir external
 cd external
 git clone https://github.com/ITensor/ITensor itensor
@@ -27,6 +27,9 @@ cd itensor
 cd ..
 # Install on your virtual environment
 pip install .
+# or create wheel package
+pip install wheel
+python setup.py bdist_wheel
 ```
 
 ## C++ Example
