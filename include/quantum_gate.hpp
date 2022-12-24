@@ -166,7 +166,25 @@ namespace qcircuit {
 
         ITensor op(const std::vector<Index>& slist) const override {
             return (1.0/sqrt(2.0))*(Proj_0(site).op(slist) + Proj_0_to_1(site).op(slist))
-                 + (1.0/sqrt(2.0))*(Proj_1(site).op(slist) - Proj_1_to_0(site).op(slist));
+                 + (1.0/sqrt(2.0))*(Proj_1_to_0(site).op(slist) - Proj_1(site).op(slist));
+        }
+    };
+
+    /**
+     * @brief Phase gate.
+     */
+    class P : public OneSiteGate {
+    public:
+        const double theta;
+
+        P(size_t site, double theta) : OneSiteGate(site), theta(theta) {}
+
+        ITensor op(const std::vector<Index>& slist) const override {
+            auto s = slist[site];
+            ITensor ret(s, prime(s));
+            ret.set(s=1, prime(s)=1, 1);
+            ret.set(s=2, prime(s)=2, std::exp(1_i * theta));
+            return ret;
         }
     };
 
@@ -254,6 +272,38 @@ namespace qcircuit {
         ITensor op(const std::vector<Index>& slist) const override {
             return Proj_0(site1).op(slist)*Id(site2).op(slist)
                 + Proj_1(site1).op(slist)*Z(site2).op(slist);
+        }
+    };
+
+    /**
+     * @brief Controlled Phase gate.
+     */
+    class CP : public TwoSiteGate {
+    public:
+        const double theta;
+
+        CP(size_t site1, size_t site2, double theta) : TwoSiteGate(site1, site2), theta(theta) {}
+
+        ITensor op(const std::vector<Index>& slist) const override {
+            return Proj_0(site1).op(slist)*Id(site2).op(slist)
+                + Proj_1(site1).op(slist)*P(site2, theta).op(slist);
+        }
+    };
+
+    /**
+     * @brief Controlled Universal Unitary gate.
+     */
+    class CUniversalUnitary : public TwoSiteGate {
+    public:
+        const double theta;
+        const double phi;
+        const double lambda;
+
+        CUniversalUnitary(size_t site1, size_t site2, double theta, double phi, double lambda) : TwoSiteGate(site1, site2), theta(theta), phi(phi), lambda(lambda) {}
+
+        ITensor op(const std::vector<Index>& slist) const override {
+            return Proj_0(site1).op(slist)*Id(site2).op(slist)
+                + Proj_1(site1).op(slist)*UniversalUnitary(site2, theta, phi, lambda).op(slist);
         }
     };
 

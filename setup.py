@@ -10,8 +10,6 @@ import os.path
 __itensor_dir__ = 'external/itensor'
 
 
-
-
 __version__ = '0.0.1'
 
 
@@ -69,7 +67,7 @@ def has_flag(compiler, flagname):
 
 def cpp_flag(compiler):
     """Return the -std=c++[17/20] compiler flag.
-    The newer version is prefered over c++11 (when it is available).
+    The newer version is preferred over c++17 (when it is available).
     """
     flags = ['-std=c++17', 'std=c++20']
 
@@ -77,7 +75,7 @@ def cpp_flag(compiler):
         if has_flag(compiler, flag):
             return flag
 
-    raise RuntimeError('Unsupported compiler -- at least C++11 support '
+    raise RuntimeError('Unsupported compiler -- at least C++17 support '
                        'is needed!')
 
 

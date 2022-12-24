@@ -15,6 +15,19 @@ is currently as follows:
     └── pybind11
 ```
 
+## Install
+
+### From GitHub
+```
+mkdir external
+cd external
+git clone https://github.com/ITensor/ITensor itensor
+cd itensor
+# configure `options.mk` and `make` following the ITensor install document https://github.com/ITensor/ITensor/blob/v3/INSTALL.md
+cd ..
+# Install on your virtual environment
+pip install .
+```
 
 ## C++ Example
 
